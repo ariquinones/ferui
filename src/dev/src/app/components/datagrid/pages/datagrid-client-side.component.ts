@@ -8,12 +8,17 @@ import {
   FilterType,
   IDateFilterParams,
   FuiRowModel,
+  BasicTreeNode,
+  TreeNodeDataRetriever,
+  TreeNode,
 } from '@ferui/components';
 import { DatagridService } from '../datagrid.service';
 
 @Component({
   template: `
     <h1 class="mt-4 mb-4">Client-side datagrid</h1>
+
+    <fui-tree-view [rootNode]="rootNode" [config]="'any'"></fui-tree-view>
 
     <fui-tabs>
       <fui-tab [title]="'Examples'" [active]="true">
@@ -84,6 +89,23 @@ import { DatagridService } from '../datagrid.service';
   providers: [DatagridService],
 })
 export class DatagridClientSideComponent {
+  rootNode: BasicTreeNode<FoodNode> = new BasicTreeNode(
+    { data: TREE_DATA, label: 'name' },
+    {
+      hasChildNodes: (node: TreeNode<FoodNode>) => {
+        return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
+      },
+      getChildNodeData: (node: TreeNode<FoodNode>) => {
+        return Promise.resolve(
+          node.getData().data.children.map(it => {
+            return { data: it, label: 'name' };
+          })
+        );
+      },
+    } as TreeNodeDataRetriever<FoodNode>,
+    null
+  );
+
   rowData: Array<any>;
   columnDefs: Array<FuiColumnDefinitions>;
   defaultColumnDefs: FuiColumnDefinitions;
@@ -162,3 +184,31 @@ export class DatagridClientSideComponent {
     this.itemPerPage = value;
   }
 }
+
+interface FoodNode {
+  name: string;
+  children?: FoodNode[];
+}
+
+const TREE_DATA: FoodNode = {
+  name: 'Foods',
+  children: [
+    {
+      name: 'Fruit',
+      children: [{ name: 'Apple' }, { name: 'Banana' }, { name: 'Fruit loops' }],
+    },
+    {
+      name: 'Vegetables',
+      children: [
+        {
+          name: 'Green',
+          children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }],
+        },
+        {
+          name: 'Orange',
+          children: [{ name: 'Pumpkins' }, { name: 'Carrots' }],
+        },
+      ],
+    },
+  ],
+};

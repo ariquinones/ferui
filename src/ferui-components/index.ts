@@ -6,3 +6,4 @@ export * from './unselectable/index';
 export * from './datagrid/index';
 export * from './forms/index';
 export * from './virtual-scroller/index';
+export * from './tree-view/index';

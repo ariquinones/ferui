@@ -1,10 +1,11 @@
 import { TreeNode, TreeNodeData, TreeNodeDataRetriever } from './interfaces';
+import { TemplateRef } from '@angular/core';
 
 export class BasicTreeNode<T> implements TreeNode<T> {
   constructor(
-    private data: TreeNodeData<T>,
-    private dataRetriever: TreeNodeDataRetriever<T>,
-    private parent: TreeNode<T> | null
+    protected data: TreeNodeData<T>,
+    protected dataRetriever: TreeNodeDataRetriever<T>,
+    protected parent: TreeNode<T> | null
   ) {}
 
   getData(): TreeNodeData<T> {
@@ -33,5 +34,9 @@ export class BasicTreeNode<T> implements TreeNode<T> {
 
   getParentNode(): TreeNode<T> | null {
     return this.parent;
+  }
+
+  getIcon(isExpanded: boolean, isSelected: boolean): TemplateRef<any> | null {
+    return this.dataRetriever.getIconTemplate(this, isExpanded, isSelected);
   }
 }

@@ -10,6 +10,7 @@ import { DatagridDemoModule } from './datagrid/datagrid.module';
 import { ComponentsDashboardComponent } from './default/default.component';
 import { ComponentsRoutingModule } from './components-demo.routing';
 import { FormsDemoModule } from './forms/forms-demo.module';
+import { TreeViewDemoModule } from './tree-view/tree-view.module';
 
 export const FUI_DEMO_COMPONENTS_DIRECTIVES: Type<any>[] = [ComponentsDashboardComponent, ComponentsLandingComponent];
 
@@ -22,6 +23,7 @@ export const FUI_DEMO_COMPONENTS_DIRECTIVES: Type<any>[] = [ComponentsDashboardC
     FeruiModule,
     DatagridDemoModule,
     HighlightModule,
+    TreeViewDemoModule,
   ],
   declarations: [FUI_DEMO_COMPONENTS_DIRECTIVES],
   exports: [FUI_DEMO_COMPONENTS_DIRECTIVES],

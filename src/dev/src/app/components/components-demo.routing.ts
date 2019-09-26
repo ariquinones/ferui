@@ -18,6 +18,7 @@ import { CheckboxComponent } from './forms/checkbox/checkbox.component';
 import { RadiosComponent } from './forms/radios/radios.component';
 import { SelectsComponent } from './forms/select/selects.component';
 import { DatagridClientSideComponent } from './datagrid/pages/datagrid-client-side.component';
+import { TreeViewClientSideDemo } from './tree-view/tree-view-client-side-demo';
 
 export const COMPONENTS_ROUTES: Routes = [
   {
@@ -51,6 +52,10 @@ export const COMPONENTS_ROUTES: Routes = [
           { path: 'server-side', component: DatagridServerSideComponent },
           { path: 'infinite-server-side', component: DatagridInfiniteServerSideComponent },
         ],
+      },
+      {
+        path: 'treeview',
+        component: TreeViewClientSideDemo,
       },
     ],
   },

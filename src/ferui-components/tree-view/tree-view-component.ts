@@ -1,4 +1,14 @@
-import { Component, Input, OnInit, Output, EventEmitter, ViewChildren, QueryList } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  Output,
+  EventEmitter,
+  ViewChildren,
+  QueryList,
+  ViewChild,
+  OnDestroy,
+} from '@angular/core';
 import { BasicTreeNode } from './basic-tree-node';
 import {
   TreeViewEvent,
@@ -6,37 +16,39 @@ import {
   TreeNode,
   TreeViewConfiguration,
   PagingParams,
-  FuiTreeViewStyles,
+  TreeNodeDataRetriever,
+  TreeViewColorTheme,
+  TreeNodeData,
+  PagedTreeNodeDataRetriever,
+  PagedTreeNode,
+  FuiTreeViewComponentStyles,
 } from './interfaces';
-import { Observable } from 'rxjs/index';
 import { ServerSideTreeNode } from './paged-tree-node';
 import { FuiTreeNodeComponent } from './tree-node-component';
+import { FuiVirtualScrollerComponent } from '../virtual-scroller/virtual-scroller';
+import { Observable, fromEvent, Subscription } from 'rxjs';
+import { throttleTime } from 'rxjs/internal/operators';
+
+// ASK JON: [scrollThrottlingTime]="1000" (scroll)="handleScrollEvent()"
+// ASK JON: how to get initial limit??
 
 @Component({
   selector: 'fui-tree-view',
   template: `
-    <div id="fui-tree-view-component" [ngStyle]="treeViewStyles.treeViewStyles">
-      <div *ngIf="hasRoot">
+    <div id="fui-tree-view-component" [ngStyle]="treeViewStyles" [ngClass]="colorTheme">
+      <fui-virtual-scroller #scroll [items]="treeViewItems" class="fui-virtual-scroller">
         <fui-tree-node
-          [node]="rootNode"
-          [selected]="false"
-          [expanded]="false"
+          *ngFor="let nodeWrapper of scroll.viewPortItems"
+          [node]="nodeWrapper.treeNode"
+          [selected]="nodeWrapper.selected"
+          [expanded]="nodeWrapper.expanded"
+          [rawData]="nodeWrapper.flattenData"
           (onNodeEvent)="nodeEvent($event)"
           [pagingParams]="pagingParams"
-          [styles]="treeViewStyles.nodeStyles"
-        ></fui-tree-node>
-      </div>
-      <div *ngIf="!hasRoot">
-        <fui-tree-node
-          *ngFor="let n of rootChildren"
-          [node]="n"
-          [selected]="false"
-          [expanded]="false"
-          (onNodeEvent)="nodeEvent($event)"
-          [pagingParams]="pagingParams"
-          [styles]="treeViewStyles.nodeStyles"
-        ></fui-tree-node>
-      </div>
+          [theme]="colorTheme"
+        >
+        </fui-tree-node>
+      </fui-virtual-scroller>
     </div>
   `,
   styles: [
@@ -46,31 +58,94 @@ import { FuiTreeNodeComponent } from './tree-node-component';
         overflow: auto;
         margin: 10px;
       }
+      .DARK_BLUE {
+        background: #252a3a;
+        color: #fff;
+      }
+      .LIGHT_BLUE {
+        background: #03a6ff;
+        color: #fff;
+      }
+      .WHITE {
+        background: #f5f8f9;
+        color: #252a3a;
+      }
+      .fui-virtual-scroller {
+        height: 100%;
+        width: 100%;
+        display: block;
+      }
     `,
   ],
 })
-export class FuiTreeViewComponent implements OnInit {
-  @Input() rootNode: TreeNode<any>;
+export class FuiTreeViewComponent implements OnInit, OnDestroy {
+  @Input() treeNodeData: TreeNodeData<any>;
+
+  @Input() rawDataRetriever: TreeNodeDataRetriever<any> | PagedTreeNodeDataRetriever<any>;
 
   @Input() config: TreeViewConfiguration;
+
+  @Input() serverSideComponent?: boolean = false;
 
   @Output() onNodeEvent: EventEmitter<TreeViewEvent<any>> = new EventEmitter<TreeViewEvent<any>>();
 
   @ViewChildren(FuiTreeNodeComponent) children: QueryList<FuiTreeNodeComponent>;
 
-  hasRoot: boolean = true;
-  rootChildren: BasicTreeNode<any>[] | null;
-  treeViewStyles: FuiTreeViewStyles;
+  @ViewChild(FuiVirtualScrollerComponent) vs: FuiVirtualScrollerComponent;
+
+  treeViewStyles: FuiTreeViewComponentStyles;
+  colorTheme: TreeViewColorTheme;
   pagingParams: PagingParams | null = null;
+  treeViewItems: TreeNodeWrapper[];
+  scrollObservable: Observable<any>;
+  scrollSubscription: Subscription;
+  private currentTreeViewItems: TreeNodeWrapper[];
+  private SERVER_SIDE_COMPONENT: boolean = false;
 
   constructor() {}
 
   ngOnInit(): void {
-    if (this.rootNode instanceof ServerSideTreeNode) {
+    this.SERVER_SIDE_COMPONENT = this.serverSideComponent;
+    if (this.SERVER_SIDE_COMPONENT) {
       // We set the initial paging params if node is a Server Side node
-      this.pagingParams = { offset: 0, limit: this.rootNode.getData().limit || 10 };
+      // the virtual scroller should be the one to give us the limit since it will calculate the height and
+      // how many node components we could render at one time
+      this.pagingParams = { offset: 0, limit: 10 };
+      this.scrollObservable = fromEvent(this.vs.element.nativeElement, 'scroll');
+      this.scrollSubscription = this.scrollObservable.pipe(throttleTime(1000)).subscribe(() => {
+        this.handleScrollEvent();
+      });
     }
-    this.treeViewStyles = this.getComponentStyles();
+    this.treeViewStyles = {
+      width: this.config.width ? this.config.width : 'auto',
+      height: this.config.height ? this.config.height : '200px',
+    };
+    this.colorTheme = this.config.colorVariation ? this.config.colorVariation : 'WHITE';
+    this.treeViewItems = this.flattenAllData(
+      this.treeNodeData.data,
+      this.treeNodeData.label,
+      this.treeNodeData.childrenLabel,
+      0,
+      null
+    )
+      .filter(it => it.fui_level === 0)
+      .map(it => {
+        // On initial load only show first level of the hierarchical tree, if the dev wants/needs to open
+        // certain node they may do so by the public methods of component
+        return {
+          treeNode: this.makeTreeNode(it),
+          selected: false,
+          expanded: false,
+          flattenData: it,
+        };
+      });
+    this.currentTreeViewItems = this.treeViewItems;
+  }
+
+  ngOnDestroy(): void {
+    if (this.scrollSubscription) {
+      this.scrollSubscription.unsubscribe();
+    }
   }
 
   /**
@@ -92,9 +167,31 @@ export class FuiTreeViewComponent implements OnInit {
   /**
    * Public method to use from outside the FuiTreeViewComponent to toggle the expandsion of tree node
    * @param {TreeNode<any>} node
+   * @param {TreeViewEventType} eventType
    */
-  public toggleExpandNode(node: TreeNode<any>): void {
-    this.toggleExpandOneNode(this.children, node);
+  public toggleExpandNode(node: TreeNode<any>, eventType: TreeViewEventType): void {
+    this.toggleExpandOneNode(this.children, node, eventType);
+  }
+
+  private handleScrollEvent() {
+    // on scroll we need to know the offset and limit to make any necessary requests
+    // paging params: limit - the limit available at the vs viewport
+    const limit = this.vs.viewPortInfo.endIndex - this.vs.viewPortInfo.startIndex - 1;
+    const parentToGetMoreChildrenFrom = this.currentTreeViewItems[this.vs.viewPortInfo.endIndex].flattenData.fui_parent;
+    // offset should be the number of children already loaded by parent
+    let childrenLoaded = 0;
+    this.currentTreeViewItems.forEach(loadedItem => {
+      if (loadedItem.flattenData.fui_parent === parentToGetMoreChildrenFrom) {
+        childrenLoaded++;
+      }
+    });
+    if (parentToGetMoreChildrenFrom) {
+      // Once the parent tree node is found, we check to see if it has more children available to load
+      if (parentToGetMoreChildrenFrom.getData().data._numberOfChildrenExpected > childrenLoaded) {
+        parentToGetMoreChildrenFrom.getData().data._pagingParams = { offset: childrenLoaded, limit: limit };
+        this.toggleExpandOneNode(this.children, parentToGetMoreChildrenFrom, TreeViewEventType.NODE_EXPANDED);
+      }
+    }
   }
 
   /**
@@ -106,7 +203,7 @@ export class FuiTreeViewComponent implements OnInit {
     switch (event.getType()) {
       case TreeViewEventType.NODE_EXPANDED:
       case TreeViewEventType.NODE_COLLAPSED:
-        this.toggleExpandOneNode(this.children, event.getNode());
+        this.toggleExpandOneNode(this.children, event.getNode(), event.getType());
         break;
       case TreeViewEventType.NODE_CLICKED:
         this.selectOneNode(this.children, event.getNode());
@@ -124,77 +221,205 @@ export class FuiTreeViewComponent implements OnInit {
   private selectOneNode(children: QueryList<FuiTreeNodeComponent>, node: TreeNode<any>) {
     children.forEach(it => {
       it.selected = node === it.node;
-      if (!!it.childrenNodeComponents && it.childrenNodeComponents.length > 0) {
-        this.selectOneNode(it.childrenNodeComponents, node);
-      }
     });
   }
 
   /**
-   * Toggles the expanded property of the chosen TreeNode Component and ensures no other TreeNode is expanded as well.
+   * Toggles the expanded property of the chosen TreeNode Component
    * @param {QueryList<FuiTreeNodeComponent>} children
    * @param {TreeNode<any>} node
+   * @param {TreeViewEventType} eventType
    */
-  private toggleExpandOneNode(children: QueryList<FuiTreeNodeComponent>, node: TreeNode<any>): void {
-    children.forEach(it => {
-      if (node === it.node) {
-        it.expanded = !it._expanded;
+  private toggleExpandOneNode(
+    children: QueryList<FuiTreeNodeComponent>,
+    node: TreeNode<any>,
+    eventType: TreeViewEventType
+  ): void {
+    children.forEach(childTreeNode => {
+      if (node === childTreeNode.node) {
+        // On NODE_EXPANDED of node, we make the GET request for its children and insert within flatten array
+        if (eventType === TreeViewEventType.NODE_EXPANDED) {
+          if (this.SERVER_SIDE_COMPONENT) {
+            childTreeNode.setLoadingChildren(true);
+            (node as PagedTreeNode<any>)
+              .getPagedChildNodes(node.getData().data._pagingParams)
+              .then(serverSideTreeNodes => {
+                childTreeNode.setLoadingChildren(false);
+                this.insertNewChildren(serverSideTreeNodes, node);
+              });
+          } else {
+            childTreeNode.setLoadingChildren(true);
+            node.getChildNodes().then(childNodes => {
+              childTreeNode.setLoadingChildren(false);
+              this.insertNewChildren(childNodes, node);
+            });
+          }
+        } else {
+          // Get all descendants tree view items from node and remove them from tree view items array
+          const descendants = this.getAllDescendants(node);
+          descendants.forEach(dec => {
+            const index = this.treeViewItems.findIndex(c => c === dec);
+            if (index >= 0) {
+              this.treeViewItems.splice(index, 1);
+            }
+          });
+        }
       }
-      if (!!it.childrenNodeComponents && it.childrenNodeComponents.length > 0) {
-        this.toggleExpandOneNode(it.childrenNodeComponents, node);
+    });
+    this.currentTreeViewItems = this.treeViewItems;
+  }
+
+  private insertNewChildren(childrenNodes: TreeNode<any>[], parentNode: TreeNode<any>): void {
+    // flatten the array of data nodes and add to the current flatten object and set current node as their parent
+    const nodeDataArray = [];
+    childrenNodes.forEach(serverNode => nodeDataArray.push(serverNode.getData().data));
+    const newFlattenItems = this.flattenAllData(
+      nodeDataArray,
+      this.treeNodeData.label,
+      this.treeNodeData.childrenLabel,
+      parentNode.getData().data.fui_level + 1,
+      parentNode
+    )
+      .filter(flattenItem => flattenItem.fui_level === parentNode.getData().data.fui_level + 1)
+      .map(serverSideFlattenItem => {
+        return {
+          treeNode: this.makeTreeNode(serverSideFlattenItem),
+          expanded: false,
+          selected: false,
+          flattenData: serverSideFlattenItem,
+        };
+      });
+    // Make sure we insert child array where its parent index is and if parent already has some children
+    // loaded get the last child's index and insert there
+    const parentIndex = this.treeViewItems.findIndex(a => a.treeNode === parentNode);
+    let childrenLoaded = 0;
+    this.treeViewItems.forEach(loadedItem => {
+      if (loadedItem.flattenData.fui_parent === parentNode) {
+        childrenLoaded++;
       }
+    });
+    const insertIntoIndex = childrenLoaded > 0 ? parentIndex + childrenLoaded + 1 : parentIndex + 1;
+    this.treeViewItems.splice(insertIntoIndex, 0, ...newFlattenItems);
+    this.treeViewItems.forEach(item => {
+      item.expanded = item.flattenData.expanded;
+      item.selected = item.flattenData.selected;
     });
   }
 
-  /**
-   * Based on the configuration object of the component we check to see if the developer specified a default color
-   * scheme or if they provided one of their own. Otherwise we choose our WHITE default color scheme
-   */
-  private getComponentStyles(): FuiTreeViewStyles {
-    // Default WHITE color scheme
-    let backgroundColor = '#F5F8F9';
-    let textColor = '#252A3A';
-    let hoverColor = '#FFF';
-    let selectTextColor = '#FFF';
-    let selectBackgroundColor = '#03A6FF';
-    if (this.config.colorVariation) {
-      switch (this.config.colorVariation) {
-        case 'DARK_BLUE':
-          backgroundColor = '#252A3A';
-          textColor = '#FFF';
-          hoverColor = '#353F4E';
-          selectTextColor = '#FFF';
-          selectBackgroundColor = '#03A6FF';
-          break;
-        case 'LIGHT_BLUE':
-          backgroundColor = '#03A6FF';
-          textColor = '#FFF';
-          hoverColor = '#0295E6';
-          selectTextColor = '#252A3A';
-          selectBackgroundColor = '#FFF';
-          break;
-        default:
-          break;
+  private getAllDescendants(node: TreeNode<any>): any[] {
+    const descendants = [];
+    this.treeViewItems.forEach(loadedItem => {
+      if (loadedItem.flattenData.fui_parent) {
+        const ancestorNodes = this.getAllNodeAncestorsFromNode(loadedItem.flattenData.fui_parent);
+        ancestorNodes.push(loadedItem.flattenData.fui_parent);
+        if (ancestorNodes.find(anc => anc === node)) {
+          descendants.push(loadedItem);
+        }
       }
-    } else if (this.config.colorConfiguration) {
-      backgroundColor = this.config.colorConfiguration.backgroundColor;
-      textColor = this.config.colorConfiguration.textColor;
-      hoverColor = this.config.colorConfiguration.nodeEventColor.backgroundHoverColor;
-      selectTextColor = this.config.colorConfiguration.nodeEventColor.textSelectColor;
-      selectBackgroundColor = this.config.colorConfiguration.nodeEventColor.backgroundSelectColor;
-    }
-    return {
-      treeViewStyles: {
-        background: backgroundColor,
-        color: textColor,
-        width: this.config.width ? this.config.width : 'auto',
-        height: this.config.height ? this.config.height : '200px',
-      },
-      nodeStyles: {
-        hover: hoverColor,
-        selected_background: selectBackgroundColor,
-        selected_color: selectTextColor,
-      },
-    };
+    });
+    return descendants;
   }
+
+  private getAllNodeAncestorsFromNode(node: TreeNode<any>) {
+    let ancestors = [];
+    if (node.hasParent()) {
+      ancestors.push(node.getParentNode());
+      if (node.getParentNode().hasParent()) {
+        ancestors = ancestors.concat(this.getAllNodeAncestorsFromNode(node.getParentNode()));
+      }
+    }
+    return ancestors;
+  }
+
+  private makeTreeNode(rawItem): TreeNode<any> {
+    return this.SERVER_SIDE_COMPONENT
+      ? new ServerSideTreeNode(
+          { data: rawItem, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
+          this.rawDataRetriever as PagedTreeNodeDataRetriever<any>,
+          rawItem.fui_parent
+        )
+      : new BasicTreeNode(
+          { data: rawItem, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
+          this.rawDataRetriever,
+          rawItem.fui_parent
+        );
+  }
+
+  private isPlainObject(value: any): boolean {
+    return value && typeof value === 'object' && value.constructor === Object;
+  }
+
+  private flattenAllData(
+    originalObj: any,
+    label: string,
+    childrenLabel: string,
+    level: number,
+    parent: TreeNode<any> | null
+  ) {
+    let concatenatedArray = [];
+    const startingLevel = level ? level : 0;
+    if (this.isPlainObject(originalObj)) {
+      if (Object.keys(originalObj).find(val => val === label)) {
+        concatenatedArray.push(
+          Object.assign({}, originalObj, { fui_label: originalObj[label], fui_level: startingLevel, fui_parent: parent })
+        );
+        if (Object.keys(originalObj).find(val => val === childrenLabel)) {
+          // this means the object has a childrens array within it
+          if (originalObj[childrenLabel].length > 0) {
+            originalObj[childrenLabel].forEach(childObj => {
+              const newArr = this.flattenAllData(
+                childObj,
+                label,
+                childrenLabel,
+                startingLevel + 1,
+                this.SERVER_SIDE_COMPONENT
+                  ? (parent as PagedTreeNode<any>)
+                  : // new ServerSideTreeNode(
+                    // { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
+                    // this.rawDataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
+                    new BasicTreeNode(
+                      {
+                        data: originalObj,
+                        label: this.treeNodeData.label,
+                        childrenLabel: this.treeNodeData.childrenLabel,
+                      },
+                      this.rawDataRetriever,
+                      parent
+                    )
+              );
+              concatenatedArray = concatenatedArray.concat(newArr);
+            });
+          }
+        }
+      }
+    } else if (Array.isArray(originalObj)) {
+      originalObj.forEach(childObj => {
+        const newArr = this.flattenAllData(
+          childObj,
+          label,
+          childrenLabel,
+          startingLevel,
+          this.SERVER_SIDE_COMPONENT
+            ? (parent as PagedTreeNode<any>)
+            : // new ServerSideTreeNode(
+              //   { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
+              //   this.rawDataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
+              new BasicTreeNode(
+                { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
+                this.rawDataRetriever,
+                parent
+              )
+        );
+        concatenatedArray = concatenatedArray.concat(newArr);
+      });
+    }
+    return concatenatedArray;
+  }
+}
+
+interface TreeNodeWrapper {
+  treeNode: TreeNode<any>;
+  selected: boolean;
+  expanded: boolean;
+  flattenData: any;
 }

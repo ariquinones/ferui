@@ -6,6 +6,8 @@ import {
   PagedTreeNode,
   TreeNodeDataRetriever,
   TreeNode,
+  TreeNodeData,
+  PagedTreeNodeDataRetriever,
 } from '@ferui/components';
 
 @Component({
@@ -13,12 +15,27 @@ import {
     <h1>Client Side Tree View</h1>
     <fui-tree-view
       (onNodeEvent)="onEvent($event)"
-      [rootNode]="rootNode"
-      [config]="{ width: '250px', height: '300px' }"
+      [treeNodeData]="treeNodeData"
+      [rawDataRetriever]="treeDataRetriever"
+      [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
     ></fui-tree-view>
 
+    <!--<h1>Client Side Tree View Array Type</h1>-->
+    <!--<fui-tree-view-->
+    <!--(onNodeEvent)="onEvent($event)"-->
+    <!--[treeNodeData]="treeNodeDataArray"-->
+    <!--[rawDataRetriever]="treeDataArrayRetriever"-->
+    <!--[config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"-->
+    <!--&gt;</fui-tree-view>-->
+
     <h1>Server Side Tree View</h1>
-    <fui-tree-view [rootNode]="serverNode" [config]="{ width: '250px', colorVariation: 'LIGHT_BLUE' }"></fui-tree-view>
+    <fui-tree-view
+      (onNodeEvent)="onEvent($event)"
+      [treeNodeData]="treeNodeData"
+      [rawDataRetriever]="serverDataRetriever"
+      [serverSideComponent]="true"
+      [config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"
+    ></fui-tree-view>
 
     <ng-template #expandedFolder>
       <span> - </span>
@@ -32,71 +49,120 @@ export class TreeViewClientSideDemo {
   @ViewChild('expandedFolder') expandedTem: TemplateRef<any>;
   @ViewChild('nonExpandedFolder') nonExpandedTem: TemplateRef<any>;
 
-  rootNode: BasicTreeNode<FoodNode> = new BasicTreeNode(
-    { data: TREE_DATA, label: 'name' },
-    {
-      hasChildNodes: (node: TreeNode<FoodNode>) => {
-        return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
-      },
-      getChildNodeData: (node: TreeNode<FoodNode>) => {
-        return Promise.resolve(
-          node.getData().data.children.map(it => {
-            return { data: it, label: 'name' };
-          })
-        );
-      },
-      getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-        return isExpanded ? this.expandedTem : this.nonExpandedTem;
-      },
-    } as TreeNodeDataRetriever<FoodNode>,
-    null
-  );
+  treeNodeData: TreeNodeData<FoodNode> = {
+    data: TREE_DATA,
+    label: 'name',
+    childrenLabel: 'children',
+  };
+
+  treeNodeDataArray = {
+    data: TREE_DATA_ARRAY,
+    label: 'name',
+    childrenLabel: 'children',
+  };
+
+  treeDataArrayRetriever = {
+    hasChildNodes: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
+    },
+    getChildNodeData: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(
+        node.getData().data.children.map(it => {
+          return { data: it, label: 'name' };
+        })
+      );
+    },
+    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
+      return isExpanded ? this.expandedTem : this.nonExpandedTem;
+    },
+  };
+
+  treeDataRetriever = {
+    hasChildNodes: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
+    },
+    getChildNodeData: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(
+        node.getData().data.children.map(it => {
+          return { data: it, label: 'name' };
+        })
+      );
+    },
+    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
+      return isExpanded ? this.expandedTem : this.nonExpandedTem;
+    },
+  } as TreeNodeDataRetriever<FoodNode>;
 
   // Server side node
-  serverNode: ServerSideTreeNode<FoodNode> = new ServerSideTreeNode(
-    { data: TREE_DATA, label: 'name', limit: 3 },
-    {
-      hasChildNodes: (node: TreeNode<FoodNode>) => {
-        return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
-      },
-      getChildNodeData: (node: TreeNode<FoodNode>) => {
-        return Promise.resolve(
-          node.getData().data.children.map(it => {
-            return { data: it, label: 'name' };
-          })
-        );
-      },
-      getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-        return isExpanded ? this.expandedTem : this.nonExpandedTem;
-      },
-      getPagedChildNodeData: (node: PagedTreeNode<FoodNode>, pagingParams: PagingParams) => {
-        return new Promise((resolve, reject) => {
-          // Will mock an error if data label is Orange
-          if (node.getData().data.name === 'Orange') {
-            reject();
-          } else {
-            setTimeout(() => {
-              const children = node
-                .getData()
-                .data.children.slice(pagingParams.offset, pagingParams.offset + pagingParams.limit);
-              resolve(
-                children.map(it => {
-                  return { data: it, label: 'name', limit: 3 };
-                })
-              );
-            }, 3000);
-          }
-        });
-      },
-      getNumberOfChildNodes: (node: PagedTreeNode<FoodNode>) => {
-        return Promise.resolve(node.getData().data.children.length);
-      },
+  serverDataRetriever = {
+    hasChildNodes: (node: TreeNode<FoodNode>) => {
+      const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(it => it.name === node.getData().data.name);
+      return Promise.resolve(!!obj.children && obj.children.length > 0);
     },
-    null
-  );
+    getChildNodeData: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(
+        node.getData().data.children.map(it => {
+          return { data: it, label: 'name' };
+        })
+      );
+    },
+    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
+      return isExpanded ? this.expandedTem : this.nonExpandedTem;
+    },
+    getPagedChildNodeData: (node: PagedTreeNode<FoodNode>, pagingParams: PagingParams) => {
+      return new Promise((resolve, reject) => {
+        // Will mock an error if data label is Orange
+        if (node.getData().data.name === 'Orange') {
+          setTimeout(() => reject(), 1000);
+        } else {
+          setTimeout(() => {
+            const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(
+              it => it.name === node.getData().data.name
+            );
+            const children = obj.children.slice(pagingParams.offset, pagingParams.offset + pagingParams.limit);
+            resolve(
+              children.map(it => {
+                return { data: { name: it.name }, label: 'name' };
+              })
+            );
+          }, 3000);
+        }
+      });
+    },
+    getNumberOfChildNodes: (node: PagedTreeNode<FoodNode>) => {
+      const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(it => it.name === node.getData().data.name);
+      return Promise.resolve(obj.children.length);
+    },
+  } as PagedTreeNodeDataRetriever<FoodNode>;
 
   onEvent(event) {
-    console.log('A node event has been emitted for the outside world to see', event);
+    //console.log('A node event has been emitted for the outside world to see', event);
+  }
+
+  flattenAllData(originalObj: any, label: string, childrenLabel: string, level: number) {
+    let concatenatedArray = [];
+    const startingLevel = level ? level : 0;
+    if (this.isPlainObject(originalObj)) {
+      if (Object.keys(originalObj).find(val => val === label)) {
+        concatenatedArray.push(
+          Object.assign({}, originalObj, { fui_label: originalObj[label], fui_level: startingLevel, fui_parent: parent })
+        );
+        if (Object.keys(originalObj).find(val => val === childrenLabel)) {
+          // this means the object has a childrens array within it
+          if (originalObj[childrenLabel].length > 0) {
+            originalObj[childrenLabel].forEach(childObj => {
+              const newArr = this.flattenAllData(childObj, label, childrenLabel, startingLevel + 1);
+              concatenatedArray = concatenatedArray.concat(newArr);
+            });
+          }
+        }
+      }
+    }
+    return concatenatedArray;
+  }
+
+  private isPlainObject(value: any): boolean {
+    return value && typeof value === 'object' && value.constructor === Object;
   }
 }
 
@@ -114,8 +180,28 @@ const TREE_DATA: FoodNode = {
         { name: 'Apple' },
         { name: 'Banana' },
         { name: 'Fruit loops' },
-        { name: 'Orange' },
-        { name: 'Strawberry' },
+        { name: 'Fruit child 1' },
+        { name: 'Fruit child 2' },
+        { name: 'Fruit child 3' },
+        { name: 'Fruit child 4' },
+        { name: 'Fruit child 5' },
+        { name: 'Fruit child 6' },
+        { name: 'Fruit child 7' },
+        { name: 'Fruit child 8' },
+        //{ name: 'Orange' },
+        {
+          name: 'Strawberry',
+          children: [
+            { name: 'straberry child 1' },
+            { name: 'straberry child 2' },
+            { name: 'straberry child 3' },
+            { name: 'straberry child 4' },
+            { name: 'straberry child 5' },
+            { name: 'straberry child 6' },
+            { name: 'straberry child 7' },
+            { name: 'straberry child 8' },
+          ],
+        },
         { name: 'Blackberry' },
         { name: 'Blueberries' },
         { name: 'Kiwi' },
@@ -137,3 +223,44 @@ const TREE_DATA: FoodNode = {
     },
   ],
 };
+const TREE_DATA_ARRAY = [
+  {
+    name: 'Fruit',
+    children: [
+      { name: 'Apple' },
+      { name: 'Banana' },
+      { name: 'Fruit loops' },
+      // { name: 'Orange' },
+      {
+        name: 'Strawberry',
+        children: [
+          { name: 'straberry child 1' },
+          { name: 'straberry child 2' },
+          { name: 'straberry child 3' },
+          { name: 'straberry child 4' },
+          { name: 'straberry child 5' },
+          { name: 'straberry child 6' },
+          { name: 'straberry child 7' },
+          { name: 'straberry child 8' },
+        ],
+      },
+      { name: 'Blackberry' },
+      { name: 'Blueberries' },
+      { name: 'Kiwi' },
+      { name: 'Coconut' },
+    ],
+  },
+  {
+    name: 'Vegetables',
+    children: [
+      {
+        name: 'Green',
+        children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }],
+      },
+      {
+        name: 'Orange',
+        children: [{ name: 'Pumpkins' }, { name: 'Carrots' }],
+      },
+    ],
+  },
+];

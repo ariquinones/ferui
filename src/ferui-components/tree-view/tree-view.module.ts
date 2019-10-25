@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { FuiTreeViewComponent } from './tree-view-component';
 import { FuiTreeNodeComponent } from './tree-node-component';
 import { ClrIconModule } from '../icon/icon.module';
+import { FuiVirtualScrollerModule } from '../virtual-scroller/virtual-scroller.module';
 
 export const FUI_TREEVIEW_DIRECTIVES: Type<any>[] = [FuiTreeViewComponent, FuiTreeNodeComponent];
 
 @NgModule({
-  imports: [CommonModule, FormsModule, ClrIconModule],
+  imports: [CommonModule, FormsModule, ClrIconModule, FuiVirtualScrollerModule],
   declarations: [FUI_TREEVIEW_DIRECTIVES],
   exports: [FUI_TREEVIEW_DIRECTIVES],
 })

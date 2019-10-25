@@ -1,29 +1,12 @@
-import {
-  Component,
-  Input,
-  OnInit,
-  Output,
-  EventEmitter,
-  ViewChildren,
-  QueryList,
-  TemplateRef,
-  HostListener,
-  HostBinding,
-} from '@angular/core';
-import { BasicTreeNode } from './basic-tree-node';
-import { TreeViewEvent, TreeViewEventType, TreeNode, FuiTreeNodeComponentStyles, PagingParams } from './interfaces';
+import { Component, Input, OnInit, Output, EventEmitter, TemplateRef } from '@angular/core';
+import { TreeViewEvent, TreeViewEventType, TreeNode, PagingParams, TreeViewColorTheme } from './interfaces';
 import { ServerSideTreeNode } from './paged-tree-node';
 
 @Component({
   selector: 'fui-tree-node',
   template: `
-    <div class="fui-tree-node">
-      <div
-        class="node-tree"
-        [style.background-color]="_selected ? styles.selected_background : 'transparent'"
-        [ngClass]="{ 'node-tree-selected': _selected }"
-        [style.padding-left.px]="level * 10"
-      >
+    <div class="fui-tree-node" [ngClass]="theme">
+      <div class="node-tree" [ngClass]="{ 'node-tree-selected': _selected }" [style.padding-left.px]="level * 10">
         <span *ngIf="hasChildren" (click)="onExpand()">
           <ng-container
             *ngIf="getIconTemplate()"
@@ -31,28 +14,9 @@ import { ServerSideTreeNode } from './paged-tree-node';
             [ngTemplateOutlet]="getIconTemplate()"
           ></ng-container>
         </span>
-        <span class="label" [style.color]="_selected ? styles.selected_color : 'inherit'" (click)="onSelected()">
+        <span class="label" [style.padding-left.px]="hasChildren ? 0 : 10" (click)="onSelected()">
           {{ node.getData().data[node.getLabel()] }}
         </span>
-      </div>
-      <div *ngIf="children">
-        <fui-tree-node
-          *ngFor="let n of children"
-          [node]="n"
-          [selected]="false"
-          [expanded]="false"
-          (onNodeEvent)="nodeEvent($event)"
-          [pagingParams]="pagingParams"
-          [styles]="styles"
-        ></fui-tree-node>
-        <div
-          *ngIf="_numberOfChildrenExpected > children.length && !loadingChildren && !loadError"
-          (click)="viewMore()"
-          [style.margin-left.px]="level * 10 + 10"
-          class="view-more"
-        >
-          View More
-        </div>
       </div>
       <div [style.margin-left.px]="level * 10 + 10">
         <clr-icon
@@ -87,13 +51,29 @@ import { ServerSideTreeNode } from './paged-tree-node';
       .icon-template {
         margin-right: 10px;
       }
-      .view-more {
-        text-decoration: underline;
-        font-size: 12px;
-        cursor: pointer;
-      }
       .error-msg {
         padding-left: 10px;
+      }
+      .DARK_BLUE .node-tree:not(.node-tree-selected):hover {
+        background: #353f4e;
+      }
+      .DARK_BLUE .node-tree-selected {
+        color: #fff;
+        background: #03a6ff;
+      }
+      .LIGHT_BLUE .node-tree:not(.node-tree-selected):hover {
+        background: #0295e6;
+      }
+      .LIGHT_BLUE .node-tree-selected {
+        color: #252a3a;
+        background: #fff;
+      }
+      .WHITE .node-tree:not(.node-tree-selected):hover {
+        background: #fff;
+      }
+      .WHITE .node-tree-selected {
+        color: #fff;
+        background: #03a6ff;
       }
     `,
   ],
@@ -103,16 +83,15 @@ export class FuiTreeNodeComponent implements OnInit {
 
   @Input() node: TreeNode<any>;
 
-  @Input() styles: FuiTreeNodeComponentStyles;
-
   @Input() pagingParams?: PagingParams | null;
 
-  @ViewChildren(FuiTreeNodeComponent) childrenNodeComponents: QueryList<FuiTreeNodeComponent>;
+  @Input() theme: TreeViewColorTheme | null;
+
+  @Input() rawData: any;
 
   hasChildren: boolean = false;
   loadingChildren: boolean = false;
   loadError: boolean = false;
-  children: TreeNode<any>[];
   level: number = 0;
   _pagingParams: PagingParams;
   _numberOfChildrenExpected: number;
@@ -125,90 +104,50 @@ export class FuiTreeNodeComponent implements OnInit {
     if (this.pagingParams) {
       // Deep clone initial params so that each child node starts at the original offset and limit
       this._pagingParams = JSON.parse(JSON.stringify(this.pagingParams));
+      this.rawData._pagingParams = this._pagingParams;
     }
-    // We check to see if the host Tree Node has any children we could load
+    // We check to see if the Tree Node has any children we could load
     this.node.hasChildren().then((hasChildren: boolean) => {
       this.hasChildren = hasChildren;
       if (this.pagingParams && this.hasChildren) {
         // Get number of children expected from Server Side Node
         (this.node as ServerSideTreeNode<any>).getNumberOfChildren().then(numberOfChildren => {
           this._numberOfChildrenExpected = numberOfChildren;
+          this.rawData._numberOfChildrenExpected = this._numberOfChildrenExpected;
         });
       }
     });
-    // We get the hierarchical level based on how many parents the host Tree Node has
-    let parentNode = this.node.getParentNode();
-    while (parentNode != null) {
-      parentNode = parentNode.getParentNode();
-      this.level += 1;
-    }
+    this.level = this.node.getData().data['fui_level'];
   }
 
   @Input()
   set selected(select: boolean) {
     this._selected = select;
+    this.rawData.selected = this._selected;
   }
 
   @Input()
   set expanded(expand: boolean) {
     this._expanded = expand;
-    if (this._expanded) {
-      this.loadingChildren = true;
-      if (this.node instanceof ServerSideTreeNode) {
-        const node = this.node as ServerSideTreeNode<any>;
-        node.getPagedChildNodes(this._pagingParams).then(
-          arrayOfPagedTreeNodes => {
-            this._pagingParams.offset += arrayOfPagedTreeNodes.length;
-            this.children = arrayOfPagedTreeNodes;
-            this.loadingChildren = false;
-          },
-          () => {
-            this.loadError = true;
-            this.loadingChildren = false;
-          }
-        );
-      } else {
-        this.node.getChildNodes().then(childs => {
-          this.children = childs as BasicTreeNode<any>[];
-          this.loadingChildren = false;
-        });
-      }
-    } else {
-      this.children = undefined;
-      if (this._pagingParams) {
-        // reset if Server Side Node
-        this._pagingParams = this.pagingParams;
-        this.loadError = false;
-      }
-    }
+    this.rawData.expanded = this._expanded;
   }
 
-  viewMore(): void {
-    this.loadingChildren = true;
-    (this.node as ServerSideTreeNode<any>).getPagedChildNodes(this._pagingParams).then(
-      children => {
-        this._pagingParams.offset += children.length;
-        this.children.push(...children);
-        // Ask Mathieu how a new loader should show up on view more...
-        this.loadingChildren = false;
-      },
-      () => {
-        this.loadError = true;
-        this.loadingChildren = false;
-      }
-    );
+  setLoadingChildren(loading: boolean): void {
+    this.loadingChildren = loading;
   }
 
   /**
    * Invokes the node event based on the host Tree Node and its expanded or collapsed state
    */
   onExpand(): void {
+    this._expanded = !this._expanded;
+    this.rawData.expanded = this._expanded;
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;
       },
       getType: () => {
-        return !this._expanded ? TreeViewEventType.NODE_EXPANDED : TreeViewEventType.NODE_COLLAPSED;
+        return this._expanded ? TreeViewEventType.NODE_EXPANDED : TreeViewEventType.NODE_COLLAPSED;
       },
     });
   }
@@ -217,6 +156,7 @@ export class FuiTreeNodeComponent implements OnInit {
    * Invokes the node event based on the host Tree Node click event
    */
   onSelected(): void {
+    this.rawData.selected = true;
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;

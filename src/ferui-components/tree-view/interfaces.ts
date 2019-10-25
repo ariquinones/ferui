@@ -38,7 +38,7 @@ export interface PagedTreeNodeDataRetriever<T> extends TreeNodeDataRetriever<T> 
 export interface TreeNodeData<T> {
   data: T;
   label: string;
-  limit?: number;
+  childrenLabel?: string;
 }
 
 export interface TreeViewEvent<T> {
@@ -56,40 +56,13 @@ export interface TreeViewConfiguration {
   width?: string;
   height?: string;
   hasBorders?: boolean;
-  // Color config lets the developer choose the entire color combo for the Tree View component.
-  // It accepts standard CSS color values such as hex values, color names, and rgb. Else we pick a default variation
-  colorConfiguration?: TreeViewColorConfiguration;
-  colorVariation?: TreeViewColorVariation;
+  // Color config lets the developer choose the entire color combo for the Tree View component based on 3 given themes
+  colorVariation?: TreeViewColorTheme;
 }
 
-export type TreeViewColorVariation = 'DARK_BLUE' | 'LIGHT_BLUE' | 'WHITE';
-
-export interface TreeViewColorConfiguration {
-  backgroundColor: string;
-  textColor: string;
-  nodeEventColor: NodeEventColor;
-}
-
-export interface NodeEventColor {
-  backgroundHoverColor: string;
-  backgroundSelectColor: string;
-  textSelectColor: string;
-}
-
-export interface FuiTreeViewStyles {
-  treeViewStyles: FuiTreeViewComponentStyles;
-  nodeStyles: FuiTreeNodeComponentStyles;
-}
+export type TreeViewColorTheme = 'DARK_BLUE' | 'LIGHT_BLUE' | 'WHITE';
 
 export interface FuiTreeViewComponentStyles {
-  background: string;
-  color: string;
   width: string;
   height: string;
-}
-
-export interface FuiTreeNodeComponentStyles {
-  hover: string;
-  selected_background: string;
-  selected_color: string;
 }

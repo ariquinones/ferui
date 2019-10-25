@@ -87,7 +87,7 @@ export class FuiTreeNodeComponent implements OnInit {
 
   @Input() theme: TreeViewColorTheme | null;
 
-  @Input() rawData: any;
+  @Input() flattenData: any;
 
   hasChildren: boolean = false;
   loadingChildren: boolean = false;
@@ -104,7 +104,7 @@ export class FuiTreeNodeComponent implements OnInit {
     if (this.pagingParams) {
       // Deep clone initial params so that each child node starts at the original offset and limit
       this._pagingParams = JSON.parse(JSON.stringify(this.pagingParams));
-      this.rawData._pagingParams = this._pagingParams;
+      this.flattenData._pagingParams = this._pagingParams;
     }
     // We check to see if the Tree Node has any children we could load
     this.node.hasChildren().then((hasChildren: boolean) => {
@@ -113,7 +113,7 @@ export class FuiTreeNodeComponent implements OnInit {
         // Get number of children expected from Server Side Node
         (this.node as ServerSideTreeNode<any>).getNumberOfChildren().then(numberOfChildren => {
           this._numberOfChildrenExpected = numberOfChildren;
-          this.rawData._numberOfChildrenExpected = this._numberOfChildrenExpected;
+          this.flattenData._numberOfChildrenExpected = this._numberOfChildrenExpected;
         });
       }
     });
@@ -123,17 +123,21 @@ export class FuiTreeNodeComponent implements OnInit {
   @Input()
   set selected(select: boolean) {
     this._selected = select;
-    this.rawData.selected = this._selected;
+    this.flattenData.selected = this._selected;
   }
 
   @Input()
   set expanded(expand: boolean) {
     this._expanded = expand;
-    this.rawData.expanded = this._expanded;
+    this.flattenData.expanded = this._expanded;
   }
 
   setLoadingChildren(loading: boolean): void {
     this.loadingChildren = loading;
+  }
+
+  setLoadingError(error: boolean): void {
+    this.loadError = error;
   }
 
   /**
@@ -141,7 +145,7 @@ export class FuiTreeNodeComponent implements OnInit {
    */
   onExpand(): void {
     this._expanded = !this._expanded;
-    this.rawData.expanded = this._expanded;
+    this.flattenData.expanded = this._expanded;
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;
@@ -156,7 +160,7 @@ export class FuiTreeNodeComponent implements OnInit {
    * Invokes the node event based on the host Tree Node click event
    */
   onSelected(): void {
-    this.rawData.selected = true;
+    this.flattenData.selected = true;
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;

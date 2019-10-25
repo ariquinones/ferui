@@ -16,7 +16,7 @@ import {
     <fui-tree-view
       (onNodeEvent)="onEvent($event)"
       [treeNodeData]="treeNodeData"
-      [rawDataRetriever]="treeDataRetriever"
+      [dataRetriever]="treeDataRetriever"
       [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
     ></fui-tree-view>
 
@@ -24,7 +24,7 @@ import {
     <!--<fui-tree-view-->
     <!--(onNodeEvent)="onEvent($event)"-->
     <!--[treeNodeData]="treeNodeDataArray"-->
-    <!--[rawDataRetriever]="treeDataArrayRetriever"-->
+    <!--[dataRetriever]="treeDataArrayRetriever"-->
     <!--[config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"-->
     <!--&gt;</fui-tree-view>-->
 
@@ -32,8 +32,7 @@ import {
     <fui-tree-view
       (onNodeEvent)="onEvent($event)"
       [treeNodeData]="treeNodeData"
-      [rawDataRetriever]="serverDataRetriever"
-      [serverSideComponent]="true"
+      [dataRetriever]="serverDataRetriever"
       [config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"
     ></fui-tree-view>
 
@@ -125,7 +124,7 @@ export class TreeViewClientSideDemo {
                 return { data: { name: it.name }, label: 'name' };
               })
             );
-          }, 3000);
+          }, 1000);
         }
       });
     },
@@ -136,9 +135,10 @@ export class TreeViewClientSideDemo {
   } as PagedTreeNodeDataRetriever<FoodNode>;
 
   onEvent(event) {
-    //console.log('A node event has been emitted for the outside world to see', event);
+    console.log('A node event has been emitted for the outside world to see', event);
   }
 
+  // FOR TESTING PURPOSES WE FLATTEN THE TREE_DATA OBJECT
   flattenAllData(originalObj: any, label: string, childrenLabel: string, level: number) {
     let concatenatedArray = [];
     const startingLevel = level ? level : 0;

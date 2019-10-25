@@ -42,7 +42,7 @@ import { throttleTime } from 'rxjs/internal/operators';
           [node]="nodeWrapper.treeNode"
           [selected]="nodeWrapper.selected"
           [expanded]="nodeWrapper.expanded"
-          [rawData]="nodeWrapper.flattenData"
+          [flattenData]="nodeWrapper.flattenData"
           (onNodeEvent)="nodeEvent($event)"
           [pagingParams]="pagingParams"
           [theme]="colorTheme"
@@ -81,11 +81,9 @@ import { throttleTime } from 'rxjs/internal/operators';
 export class FuiTreeViewComponent implements OnInit, OnDestroy {
   @Input() treeNodeData: TreeNodeData<any>;
 
-  @Input() rawDataRetriever: TreeNodeDataRetriever<any> | PagedTreeNodeDataRetriever<any>;
+  @Input() dataRetriever: TreeNodeDataRetriever<any> | PagedTreeNodeDataRetriever<any>;
 
   @Input() config: TreeViewConfiguration;
-
-  @Input() serverSideComponent?: boolean = false;
 
   @Output() onNodeEvent: EventEmitter<TreeViewEvent<any>> = new EventEmitter<TreeViewEvent<any>>();
 
@@ -105,7 +103,7 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    this.SERVER_SIDE_COMPONENT = this.serverSideComponent;
+    this.SERVER_SIDE_COMPONENT = this.dataRetriever.hasOwnProperty('getPagedChildNodeData');
     if (this.SERVER_SIDE_COMPONENT) {
       // We set the initial paging params if node is a Server Side node
       // the virtual scroller should be the one to give us the limit since it will calculate the height and
@@ -239,21 +237,20 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
       if (node === childTreeNode.node) {
         // On NODE_EXPANDED of node, we make the GET request for its children and insert within flatten array
         if (eventType === TreeViewEventType.NODE_EXPANDED) {
-          if (this.SERVER_SIDE_COMPONENT) {
-            childTreeNode.setLoadingChildren(true);
-            (node as PagedTreeNode<any>)
-              .getPagedChildNodes(node.getData().data._pagingParams)
-              .then(serverSideTreeNodes => {
-                childTreeNode.setLoadingChildren(false);
-                this.insertNewChildren(serverSideTreeNodes, node);
-              });
-          } else {
-            childTreeNode.setLoadingChildren(true);
-            node.getChildNodes().then(childNodes => {
+          const promise = this.SERVER_SIDE_COMPONENT
+            ? (node as PagedTreeNode<any>).getPagedChildNodes(node.getData().data._pagingParams)
+            : node.getChildNodes();
+          childTreeNode.setLoadingChildren(true);
+          promise.then(
+            childNodes => {
               childTreeNode.setLoadingChildren(false);
               this.insertNewChildren(childNodes, node);
-            });
-          }
+            },
+            () => {
+              childTreeNode.setLoadingChildren(false);
+              childTreeNode.setLoadingError(true);
+            }
+          );
         } else {
           // Get all descendants tree view items from node and remove them from tree view items array
           const descendants = this.getAllDescendants(node);
@@ -335,12 +332,12 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
     return this.SERVER_SIDE_COMPONENT
       ? new ServerSideTreeNode(
           { data: rawItem, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
-          this.rawDataRetriever as PagedTreeNodeDataRetriever<any>,
+          this.dataRetriever as PagedTreeNodeDataRetriever<any>,
           rawItem.fui_parent
         )
       : new BasicTreeNode(
           { data: rawItem, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
-          this.rawDataRetriever,
+          this.dataRetriever,
           rawItem.fui_parent
         );
   }
@@ -376,14 +373,14 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
                   ? (parent as PagedTreeNode<any>)
                   : // new ServerSideTreeNode(
                     // { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
-                    // this.rawDataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
+                    // this.dataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
                     new BasicTreeNode(
                       {
                         data: originalObj,
                         label: this.treeNodeData.label,
                         childrenLabel: this.treeNodeData.childrenLabel,
                       },
-                      this.rawDataRetriever,
+                      this.dataRetriever,
                       parent
                     )
               );
@@ -403,10 +400,10 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
             ? (parent as PagedTreeNode<any>)
             : // new ServerSideTreeNode(
               //   { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
-              //   this.rawDataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
+              //   this.dataRetriever as PagedTreeNodeDataRetriever<any>, parent as PagedTreeNode<any>) :
               new BasicTreeNode(
                 { data: originalObj, label: this.treeNodeData.label, childrenLabel: this.treeNodeData.childrenLabel },
-                this.rawDataRetriever,
+                this.dataRetriever,
                 parent
               )
         );

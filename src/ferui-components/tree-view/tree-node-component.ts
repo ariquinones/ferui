@@ -117,7 +117,7 @@ export class FuiTreeNodeComponent implements OnInit {
         });
       }
     });
-    this.level = this.node.getData().data['fui_level'];
+    this.level = this.node.getData().data.fui_level;
   }
 
   @Input()
@@ -146,6 +146,9 @@ export class FuiTreeNodeComponent implements OnInit {
   onExpand(): void {
     this._expanded = !this._expanded;
     this.flattenData.expanded = this._expanded;
+    if (!this._expanded) {
+      this.loadError = false;
+    }
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;

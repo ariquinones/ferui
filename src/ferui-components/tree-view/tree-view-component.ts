@@ -31,6 +31,7 @@ import { throttleTime } from 'rxjs/internal/operators';
 
 // ASK JON: [scrollThrottlingTime]="1000" (scroll)="handleScrollEvent()"
 // ASK JON: how to get initial limit??
+// ASK Mathieu: How to handle load error icon and loading wheel
 
 @Component({
   selector: 'fui-tree-view',
@@ -116,7 +117,7 @@ export class FuiTreeViewComponent implements OnInit, OnDestroy {
     }
     this.treeViewStyles = {
       width: this.config.width ? this.config.width : 'auto',
-      height: this.config.height ? this.config.height : '200px',
+      height: this.config.height ? this.config.height : '100%',
     };
     this.colorTheme = this.config.colorVariation ? this.config.colorVariation : 'WHITE';
     this.treeViewItems = this.flattenAllData(

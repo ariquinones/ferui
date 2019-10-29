@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter, TemplateRef } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, TemplateRef, ViewContainerRef } from '@angular/core';
 import { TreeViewEvent, TreeViewEventType, TreeNode, PagingParams, TreeViewColorTheme } from './interfaces';
 import { ServerSideTreeNode } from './paged-tree-node';
 
@@ -6,31 +6,23 @@ import { ServerSideTreeNode } from './paged-tree-node';
   selector: 'fui-tree-node',
   template: `
     <div class="fui-tree-node" [ngClass]="theme">
-      <div class="node-tree" [ngClass]="{ 'node-tree-selected': _selected }" [style.padding-left.px]="level * 10">
-        <span *ngIf="hasChildren" (click)="onExpand()">
-          <ng-container
-            *ngIf="getIconTemplate()"
-            class="icon-template"
-            [ngTemplateOutlet]="getIconTemplate()"
-          ></ng-container>
+      <div
+        class="node-tree"
+        (click)="onSelected()"
+        [ngClass]="{ 'node-tree-selected': _selected }"
+        [style.padding-left.px]="calculatePadding()"
+      >
+        <span *ngIf="hasChildren" class="icon-template" (click)="onExpand()">
+          <ng-container *ngIf="getIconTemplate()" [ngTemplateOutlet]="getIconTemplate()"></ng-container>
         </span>
-        <span class="label" [style.padding-left.px]="hasChildren ? 0 : 10" (click)="onSelected()">
+        <span class="label">
           {{ node.getData().data[node.getLabel()] }}
         </span>
       </div>
-      <div [style.margin-left.px]="level * 10 + 10">
-        <clr-icon
-          *ngIf="loadingChildren"
-          class="fui-datagrid-loading-icon fui-loader-animation"
-          shape="fui-spinner"
-        ></clr-icon>
-        <clr-icon
-          *ngIf="loadError && !loadingChildren"
-          class="fui-error-icon"
-          shape="fui-error"
-          aria-hidden="true"
-        ></clr-icon>
-        <span *ngIf="loadError && !loadingChildren" class="error-msg">Couldn't load content</span>
+      <div [style.margin-left.px]="calculatePadding() + 20">
+        <clr-icon *ngIf="showLoader" class="fui-datagrid-loading-icon fui-loader-animation" shape="fui-spinner"></clr-icon>
+        <clr-icon *ngIf="loadError" class="fui-error-icon" shape="fui-error" aria-hidden="true"></clr-icon>
+        <span *ngIf="loadError" class="error-msg">Couldn't load content</span>
       </div>
     </div>
   `,
@@ -49,10 +41,16 @@ import { ServerSideTreeNode } from './paged-tree-node';
         box-shadow: 0 4px 6px 0 rgba(54, 71, 82, 0.12);
       }
       .icon-template {
-        margin-right: 10px;
+        margin-right: 5px;
+      }
+      .fui-error-icon {
+        height: 14px;
+        width: 14px;
       }
       .error-msg {
-        padding-left: 10px;
+        padding-left: 5px;
+        font-size: 12px;
+        vertical-align: bottom;
       }
       .DARK_BLUE .node-tree:not(.node-tree-selected):hover {
         background: #353f4e;
@@ -89,8 +87,9 @@ export class FuiTreeNodeComponent implements OnInit {
 
   @Input() flattenData: any;
 
+  @Input() showLoader: boolean = false;
+
   hasChildren: boolean = false;
-  loadingChildren: boolean = false;
   loadError: boolean = false;
   level: number = 0;
   _pagingParams: PagingParams;
@@ -98,7 +97,7 @@ export class FuiTreeNodeComponent implements OnInit {
   _expanded: boolean;
   _selected: boolean;
 
-  constructor() {}
+  constructor(public vcr: ViewContainerRef) {}
 
   ngOnInit(): void {
     if (this.pagingParams) {
@@ -132,12 +131,12 @@ export class FuiTreeNodeComponent implements OnInit {
     this.flattenData.expanded = this._expanded;
   }
 
-  setLoadingChildren(loading: boolean): void {
-    this.loadingChildren = loading;
-  }
-
   setLoadingError(error: boolean): void {
     this.loadError = error;
+  }
+
+  calculatePadding(): number {
+    return this.hasChildren ? this.level * 20 + 10 : this.level * 20 + 30;
   }
 
   /**
@@ -163,7 +162,8 @@ export class FuiTreeNodeComponent implements OnInit {
    * Invokes the node event based on the host Tree Node click event
    */
   onSelected(): void {
-    this.flattenData.selected = true;
+    this._selected = true;
+    this.flattenData.selected = this._selected;
     this.onNodeEvent.emit({
       getNode: () => {
         return this.node as TreeNode<any>;

@@ -31,18 +31,32 @@ import {
     <h1>Server Side Tree View</h1>
     <fui-tree-view
       (onNodeEvent)="onEvent($event)"
-      [treeNodeData]="treeNodeData"
+      [treeNodeData]="serverSideTreeNodeData"
       [dataRetriever]="serverDataRetriever"
       [config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"
     ></fui-tree-view>
 
     <ng-template #expandedFolder>
-      <span> - </span>
+      <clr-icon class="fui-less-icon" shape="fui-less"></clr-icon>
     </ng-template>
     <ng-template #nonExpandedFolder>
-      <span> + </span>
+      <clr-icon class="fui-add-icon" shape="fui-add"></clr-icon>
     </ng-template>
   `,
+  styles: [
+    `
+      .fui-less-icon {
+        height: 12px;
+        width: 10px;
+        margin-bottom: 2px;
+      }
+      .fui-add-icon {
+        height: 12px;
+        width: 12px;
+        margin-bottom: 2px;
+      }
+    `,
+  ],
 })
 export class TreeViewClientSideDemo {
   @ViewChild('expandedFolder') expandedTem: TemplateRef<any>;
@@ -50,6 +64,12 @@ export class TreeViewClientSideDemo {
 
   treeNodeData: TreeNodeData<FoodNode> = {
     data: TREE_DATA,
+    label: 'name',
+    childrenLabel: 'children',
+  };
+
+  serverSideTreeNodeData: TreeNodeData<FoodNode> = {
+    data: { name: 'Foods' },
     label: 'name',
     childrenLabel: 'children',
   };
@@ -134,8 +154,14 @@ export class TreeViewClientSideDemo {
     },
   } as PagedTreeNodeDataRetriever<FoodNode>;
 
+  ngOnInit() {
+    for (let i = 0; i <= 50; i++) {
+      TREE_DATA.children[0].children.push({ name: 'Fruit Child ' + i });
+    }
+  }
+
   onEvent(event) {
-    console.log('A node event has been emitted for the outside world to see', event);
+    // console.log('A node event has been emitted for the outside world to see', event);
   }
 
   // FOR TESTING PURPOSES WE FLATTEN THE TREE_DATA OBJECT
@@ -180,14 +206,6 @@ const TREE_DATA: FoodNode = {
         { name: 'Apple' },
         { name: 'Banana' },
         { name: 'Fruit loops' },
-        { name: 'Fruit child 1' },
-        { name: 'Fruit child 2' },
-        { name: 'Fruit child 3' },
-        { name: 'Fruit child 4' },
-        { name: 'Fruit child 5' },
-        { name: 'Fruit child 6' },
-        { name: 'Fruit child 7' },
-        { name: 'Fruit child 8' },
         //{ name: 'Orange' },
         {
           name: 'Strawberry',
@@ -223,6 +241,7 @@ const TREE_DATA: FoodNode = {
     },
   ],
 };
+
 const TREE_DATA_ARRAY = [
   {
     name: 'Fruit',

@@ -12,29 +12,33 @@ import {
 
 @Component({
   template: `
-    <h1>Client Side Tree View</h1>
-    <fui-tree-view
-      (onNodeEvent)="onEvent($event)"
-      [treeNodeData]="treeNodeData"
-      [dataRetriever]="treeDataRetriever"
-      [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
-    ></fui-tree-view>
-
-    <!--<h1>Client Side Tree View Array Type</h1>-->
-    <!--<fui-tree-view-->
-    <!--(onNodeEvent)="onEvent($event)"-->
-    <!--[treeNodeData]="treeNodeDataArray"-->
-    <!--[dataRetriever]="treeDataArrayRetriever"-->
-    <!--[config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"-->
-    <!--&gt;</fui-tree-view>-->
-
-    <h1>Server Side Tree View</h1>
-    <fui-tree-view
-      (onNodeEvent)="onEvent($event)"
-      [treeNodeData]="serverSideTreeNodeData"
-      [dataRetriever]="serverDataRetriever"
-      [config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"
-    ></fui-tree-view>
+    <div>
+      <h1>Client Side Tree View</h1>
+      <fui-tree-view
+        (onNodeEvent)="onEvent($event)"
+        [treeNodeData]="treeNodeData"
+        [dataRetriever]="treeDataRetriever"
+        [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
+      ></fui-tree-view>
+    </div>
+    <div>
+      <h1>Client Side Tree View Array Type</h1>
+      <fui-tree-view
+        (onNodeEvent)="onEvent($event)"
+        [treeNodeData]="treeNodeDataArray"
+        [dataRetriever]="treeDataArrayRetriever"
+        [config]="{ width: '250px', height: '300px' }"
+      ></fui-tree-view>
+    </div>
+    <div>
+      <h1>Server Side Tree View</h1>
+      <fui-tree-view
+        (onNodeEvent)="onEvent($event)"
+        [treeNodeData]="serverSideTreeNodeData"
+        [dataRetriever]="serverDataRetriever"
+        [config]="{ width: '250px', height: '300px', colorVariation: 'DARK_BLUE' }"
+      ></fui-tree-view>
+    </div>
 
     <ng-template #expandedFolder>
       <clr-icon class="fui-less-icon" shape="fui-less"></clr-icon>
@@ -45,6 +49,9 @@ import {
   `,
   styles: [
     `
+      div {
+        display: inline-block;
+      }
       .fui-less-icon {
         height: 12px;
         width: 10px;

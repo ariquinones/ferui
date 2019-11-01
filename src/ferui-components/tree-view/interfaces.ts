@@ -1,67 +1,92 @@
 import { TemplateRef } from '@angular/core';
 
-export interface TreeNode<T> {
-  getData(): TreeNodeData<T>;
-  getLabel(): string;
-  hasChildren(): Promise<boolean>;
-  getChildNodes(): Promise<Array<TreeNode<T>>>;
-  hasParent(): boolean;
-  getParentNode(): TreeNode<T> | null;
-  getIcon(isNodeExpanded: boolean, isNodeSelected: boolean): TemplateRef<any> | null;
+/**
+ * Tree Node Data Interface
+ */
+export interface TreeNodeData<T> {
+  data: T;
+  label: string;
 }
 
-export interface TreeNodeDataRetriever<T> {
-  hasChildNodes(parent: TreeNode<T>): Promise<boolean>;
-  getChildNodeData(parent: TreeNode<T>): Promise<Array<TreeNodeData<T>>>;
-  // based on the current TreeNode and its status, we allow the developer to give us an icon template
-  // Cannot be part of any configuration or ng-content because it would only allow the dev to give us a limit amount
-  // of icon settings and with this we allow for any icon they could possibly want at any moment
-  getIconTemplate(treeNode: TreeNode<T>, isExpanded: boolean, isSelected: boolean): TemplateRef<any> | null;
-}
-
+/**
+ * Paging Params Interface
+ */
 export interface PagingParams {
   offset: number;
   limit: number;
 }
 
-export interface PagedTreeNode<T> extends TreeNode<T> {
-  getPagedChildNodes(pagingParams: PagingParams): Promise<Array<PagedTreeNode<T>>>;
-  getPagedParentNode(): PagedTreeNode<T> | null;
+/**
+ * Tree Node Data Retriever Interface for client-side tree view
+ */
+export interface TreeNodeDataRetriever<T> {
+  getChildNodeData(parent: TreeNode<T>): Promise<Array<TreeNodeData<T>>>;
+
+  hasChildNodes(parent: TreeNode<T>): Promise<boolean>;
+
+  // based on the current TreeNode and its status, we allow the developer to give us an icon template
+  getIconTemplate(treeNode: TreeNode<T>, isExpanded: boolean, isSelected: boolean): TemplateRef<any> | null;
 }
 
+/**
+ * Paged Tree Node Data Retriever for server-side tree view
+ */
 export interface PagedTreeNodeDataRetriever<T> extends TreeNodeDataRetriever<T> {
-  getPagedChildNodeData(parent: PagedTreeNode<T> | null, pagingParams: PagingParams): Promise<Array<TreeNodeData<T>>>;
-  getNumberOfChildNodes(parent: PagedTreeNode<T>): Promise<number>;
-  hasChildNodes(parent: PagedTreeNode<T>): Promise<boolean>;
+  getPagedChildNodeData(parent: TreeNode<T>, pagingParams: PagingParams): Promise<Array<TreeNodeData<T>>>;
 }
 
-export interface TreeNodeData<T> {
-  data: T;
-  label: string;
-  childrenLabel?: string;
+/**
+ * Tree Node Interface
+ */
+export interface TreeNode<T> {
+  data: TreeNodeData<T>;
+  selected: boolean;
+  expanded: boolean;
+  children: Array<TreeNode<T>>;
+  allChildrenLoaded: boolean;
+  parent: TreeNode<T> | null;
+  showLoader: boolean;
+  loadError: boolean;
 }
 
+/**
+ * Tree View Event Interface
+ */
 export interface TreeViewEvent<T> {
   getNode(): TreeNode<T>;
   getType(): TreeViewEventType;
 }
 
+/**
+ * Tree View Event Type enum
+ */
 export enum TreeViewEventType {
   NODE_CLICKED,
   NODE_EXPANDED,
   NODE_COLLAPSED,
 }
 
+/**
+ * Tree View Configuration Interface
+ */
 export interface TreeViewConfiguration {
   width?: string;
   height?: string;
   hasBorders?: boolean;
   // Color config lets the developer choose the entire color combo for the Tree View component based on 3 given themes
   colorVariation?: TreeViewColorTheme;
+  // Buffer amount set by developer, use iland default if not given
+  bufferAmount?: number;
 }
 
+/**
+ * Tree View Color Theme enum of possible options
+ */
 export type TreeViewColorTheme = 'DARK_BLUE' | 'LIGHT_BLUE' | 'WHITE';
 
+/**
+ * Tree View Component Styles Interface
+ */
 export interface FuiTreeViewComponentStyles {
   width: string;
   height: string;

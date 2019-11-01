@@ -1,9 +1,6 @@
 import { Component, ViewChild, TemplateRef } from '@angular/core';
 import {
-  BasicTreeNode,
-  ServerSideTreeNode,
   PagingParams,
-  PagedTreeNode,
   TreeNodeDataRetriever,
   TreeNode,
   TreeNodeData,
@@ -21,15 +18,15 @@ import {
         [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
       ></fui-tree-view>
     </div>
-    <div>
-      <h1>Client Side Tree View Array Type</h1>
-      <fui-tree-view
-        (onNodeEvent)="onEvent($event)"
-        [treeNodeData]="treeNodeDataArray"
-        [dataRetriever]="treeDataArrayRetriever"
-        [config]="{ width: '250px', height: '300px' }"
-      ></fui-tree-view>
-    </div>
+    <!--<div>-->
+    <!--<h1>Client Side Tree View Array Type</h1>-->
+    <!--<fui-tree-view-->
+    <!--(onNodeEvent)="onEvent($event)"-->
+    <!--[treeNodeData]="treeNodeDataArray"-->
+    <!--[dataRetriever]="treeDataArrayRetriever"-->
+    <!--[config]="{ width: '250px', height: '300px' }"-->
+    <!--&gt;</fui-tree-view>-->
+    <!--</div>-->
     <div>
       <h1>Server Side Tree View</h1>
       <fui-tree-view
@@ -72,44 +69,41 @@ export class TreeViewClientSideDemo {
   treeNodeData: TreeNodeData<FoodNode> = {
     data: TREE_DATA,
     label: 'name',
-    childrenLabel: 'children',
   };
 
   serverSideTreeNodeData: TreeNodeData<FoodNode> = {
     data: { name: 'Foods' },
     label: 'name',
-    childrenLabel: 'children',
   };
 
   treeNodeDataArray = {
     data: TREE_DATA_ARRAY,
     label: 'name',
-    childrenLabel: 'children',
   };
 
-  treeDataArrayRetriever = {
-    hasChildNodes: (node: TreeNode<FoodNode>) => {
-      return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
-    },
-    getChildNodeData: (node: TreeNode<FoodNode>) => {
-      return Promise.resolve(
-        node.getData().data.children.map(it => {
-          return { data: it, label: 'name' };
-        })
-      );
-    },
-    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-      return isExpanded ? this.expandedTem : this.nonExpandedTem;
-    },
-  };
+  // treeDataArrayRetriever = {
+  //   hasChildNodes: (node: TreeNode<FoodNode>) => {
+  //     return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
+  //   },
+  //   getChildNodeData: (node: TreeNode<FoodNode>) => {
+  //     return Promise.resolve(
+  //       node.getData().data.children.map(it => {
+  //         return { data: it, label: 'name' };
+  //       })
+  //     );
+  //   },
+  //   getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
+  //     return isExpanded ? this.expandedTem : this.nonExpandedTem;
+  //   },
+  // };
 
   treeDataRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {
-      return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
+      return Promise.resolve(!!node.data.data.children && node.data.data.children.length > 0);
     },
     getChildNodeData: (node: TreeNode<FoodNode>) => {
       return Promise.resolve(
-        node.getData().data.children.map(it => {
+        node.data.data.children.map(it => {
           return { data: it, label: 'name' };
         })
       );
@@ -122,12 +116,12 @@ export class TreeViewClientSideDemo {
   // Server side node
   serverDataRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {
-      const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(it => it.name === node.getData().data.name);
+      const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(it => it.name === node.data.data['name']);
       return Promise.resolve(!!obj.children && obj.children.length > 0);
     },
     getChildNodeData: (node: TreeNode<FoodNode>) => {
       return Promise.resolve(
-        node.getData().data.children.map(it => {
+        node.data.data['children'].map(i => {
           return { data: it, label: 'name' };
         })
       );
@@ -135,15 +129,15 @@ export class TreeViewClientSideDemo {
     getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
       return isExpanded ? this.expandedTem : this.nonExpandedTem;
     },
-    getPagedChildNodeData: (node: PagedTreeNode<FoodNode>, pagingParams: PagingParams) => {
+    getPagedChildNodeData: (node: TreeNode<FoodNode>, pagingParams: PagingParams) => {
       return new Promise((resolve, reject) => {
         // Will mock an error if data label is Orange
-        if (node.getData().data.name === 'Orange') {
+        if (node.data.data['name'] === 'Orange') {
           setTimeout(() => reject(), 1000);
         } else {
           setTimeout(() => {
             const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(
-              it => it.name === node.getData().data.name
+              it => it.name === node.data.data['name']
             );
             const children = obj.children.slice(pagingParams.offset, pagingParams.offset + pagingParams.limit);
             resolve(
@@ -151,19 +145,19 @@ export class TreeViewClientSideDemo {
                 return { data: { name: it.name }, label: 'name' };
               })
             );
-          }, 1000);
+          }, 500);
         }
       });
-    },
-    getNumberOfChildNodes: (node: PagedTreeNode<FoodNode>) => {
-      const obj = this.flattenAllData(TREE_DATA, 'name', 'children', 0).find(it => it.name === node.getData().data.name);
-      return Promise.resolve(obj.children.length);
     },
   } as PagedTreeNodeDataRetriever<FoodNode>;
 
   ngOnInit() {
-    for (let i = 0; i <= 50; i++) {
+    for (let i = 0; i <= 25; i++) {
       TREE_DATA.children[0].children.push({ name: 'Fruit Child ' + i });
+    }
+    for (let x = 0; x <= 20; x++) {
+      TREE_DATA.children[1].children.push({ name: 'Vegetable Child ' + x });
+      TREE_DATA.children[0].children[3].children.push({ name: 'Strawberry child ' + x });
     }
   }
 
@@ -213,19 +207,9 @@ const TREE_DATA: FoodNode = {
         { name: 'Apple' },
         { name: 'Banana' },
         { name: 'Fruit loops' },
-        //{ name: 'Orange' },
         {
           name: 'Strawberry',
-          children: [
-            { name: 'straberry child 1' },
-            { name: 'straberry child 2' },
-            { name: 'straberry child 3' },
-            { name: 'straberry child 4' },
-            { name: 'straberry child 5' },
-            { name: 'straberry child 6' },
-            { name: 'straberry child 7' },
-            { name: 'straberry child 8' },
-          ],
+          children: [],
         },
         { name: 'Blackberry' },
         { name: 'Blueberries' },
@@ -256,7 +240,6 @@ const TREE_DATA_ARRAY = [
       { name: 'Apple' },
       { name: 'Banana' },
       { name: 'Fruit loops' },
-      // { name: 'Orange' },
       {
         name: 'Strawberry',
         children: [
@@ -270,7 +253,10 @@ const TREE_DATA_ARRAY = [
           { name: 'straberry child 8' },
         ],
       },
-      { name: 'Blackberry' },
+      {
+        name: 'Blackberry',
+        children: [{ name: 'Blackberry child 1' }, { name: 'Blackberry child 2' }, { name: 'Blackberry child 3' }],
+      },
       { name: 'Blueberries' },
       { name: 'Kiwi' },
       { name: 'Coconut' },

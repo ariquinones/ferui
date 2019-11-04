@@ -5,6 +5,7 @@ import {
   TreeNode,
   TreeNodeData,
   PagedTreeNodeDataRetriever,
+  NonRootTreeNode,
 } from '@ferui/components';
 
 @Component({
@@ -18,15 +19,15 @@ import {
         [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
       ></fui-tree-view>
     </div>
-    <!--<div>-->
-    <!--<h1>Client Side Tree View Array Type</h1>-->
-    <!--<fui-tree-view-->
-    <!--(onNodeEvent)="onEvent($event)"-->
-    <!--[treeNodeData]="treeNodeDataArray"-->
-    <!--[dataRetriever]="treeDataArrayRetriever"-->
-    <!--[config]="{ width: '250px', height: '300px' }"-->
-    <!--&gt;</fui-tree-view>-->
-    <!--</div>-->
+    <div>
+      <h1>Client Side Tree View Array Type</h1>
+      <fui-tree-view
+        (onNodeEvent)="onEvent($event)"
+        [treeNodeData]="noRoot"
+        [dataRetriever]="treeDataArrayRetriever"
+        [config]="{ width: '250px', height: '300px' }"
+      ></fui-tree-view>
+    </div>
     <div>
       <h1>Server Side Tree View</h1>
       <fui-tree-view
@@ -46,9 +47,6 @@ import {
   `,
   styles: [
     `
-      div {
-        display: inline-block;
-      }
       .fui-less-icon {
         height: 12px;
         width: 10px;
@@ -76,26 +74,31 @@ export class TreeViewClientSideDemo {
     label: 'name',
   };
 
-  treeNodeDataArray = {
-    data: TREE_DATA_ARRAY,
-    label: 'name',
-  };
+  noRoot = new NonRootTreeNode();
 
-  // treeDataArrayRetriever = {
-  //   hasChildNodes: (node: TreeNode<FoodNode>) => {
-  //     return Promise.resolve(!!node.getData().data.children && node.getData().data.children.length > 0);
-  //   },
-  //   getChildNodeData: (node: TreeNode<FoodNode>) => {
-  //     return Promise.resolve(
-  //       node.getData().data.children.map(it => {
-  //         return { data: it, label: 'name' };
-  //       })
-  //     );
-  //   },
-  //   getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-  //     return isExpanded ? this.expandedTem : this.nonExpandedTem;
-  //   },
-  // };
+  treeDataArrayRetriever = {
+    hasChildNodes: (node: TreeNode<FoodNode>) => {
+      return Promise.resolve(!!node.data.data.children && node.data.data.children.length > 0);
+    },
+    getChildNodeData: (node: TreeNode<FoodNode>) => {
+      const isEmptyRoot = node.data instanceof NonRootTreeNode;
+      if (isEmptyRoot) {
+        return Promise.resolve(
+          TREE_DATA_ARRAY.map(it => {
+            return { data: it, label: 'name' };
+          })
+        );
+      }
+      return Promise.resolve(
+        node.data.data.children.map(it => {
+          return { data: it, label: 'name' };
+        })
+      );
+    },
+    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
+      return isExpanded ? this.expandedTem : this.nonExpandedTem;
+    },
+  };
 
   treeDataRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {

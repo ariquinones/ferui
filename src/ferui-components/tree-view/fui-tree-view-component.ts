@@ -9,6 +9,7 @@ import {
   PagedTreeNodeDataRetriever,
   TreeNode,
   FuiTreeViewComponentStyles,
+  NonRootTreeNode,
 } from './interfaces';
 import { FuiVirtualScrollerComponent } from '../virtual-scroller/virtual-scroller';
 import { Observable, fromEvent, Subscription } from 'rxjs';
@@ -67,9 +68,10 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
 
   @Output() onNodeEvent: EventEmitter<TreeViewEvent<any>> = new EventEmitter<TreeViewEvent<any>>();
 
-  rootNode: TreeNode<T>;
   treeViewStyles: FuiTreeViewComponentStyles;
   colorTheme: TreeViewColorTheme;
+  private rootNode: TreeNode<T>;
+  private nonRootArray: TreeNode<T>[];
   private scrollViewArray: TreeNode<T>[];
   private scrollObservable: Observable<any>;
   private scrollSubscription: Subscription;
@@ -83,7 +85,6 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
   constructor() {}
 
   ngOnInit(): void {
-    this.rootNode = this.createTreeNode(this.treeNodeData, null);
     this.SERVER_SIDE_COMPONENT = this.dataRetriever.hasOwnProperty('getPagedChildNodeData');
     this.treeViewStyles = {
       width: this.config.width ? this.config.width : this.DEFAULT_WIDTH,
@@ -97,7 +98,18 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
         this.handleScroll(this.vs.viewPortInfo.endIndex);
       });
     }
-    this.scrollViewArray = [this.rootNode];
+    if (this.treeNodeData instanceof NonRootTreeNode) {
+      const emptyRootNode = this.createTreeNode(this.treeNodeData, null);
+      this.dataRetriever.getChildNodeData(emptyRootNode).then(children => {
+        this.nonRootArray = children.map(child => {
+          return this.createTreeNode(child, null);
+        });
+        this.scrollViewArray = this.nonRootArray;
+      });
+    } else {
+      this.rootNode = this.createTreeNode(this.treeNodeData, null);
+      this.scrollViewArray = [this.rootNode];
+    }
   }
 
   ngOnDestroy(): void {
@@ -137,7 +149,13 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
 
   private rebuildVirtualScrollerArray() {
     const aggregator = [];
-    this.addNodeAndChildrenToVirtualScrollerArray(this.rootNode, aggregator);
+    if (this.rootNode) {
+      this.addNodeAndChildrenToVirtualScrollerArray(this.rootNode, aggregator);
+    } else {
+      for (const child of this.nonRootArray) {
+        this.addNodeAndChildrenToVirtualScrollerArray(child, aggregator);
+      }
+    }
     this.scrollViewArray = aggregator;
   }
 

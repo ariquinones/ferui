@@ -49,6 +49,13 @@ export interface TreeNode<T> {
   loadError: boolean;
 }
 
+export class NonRootTreeNode<T> implements TreeNodeData<T> {
+  // public static INSTANCE: NonRootTreeNode<T> = new NonRootTreeNode<T>();
+  //
+  data: T;
+  label: string;
+}
+
 /**
  * Tree View Event Interface
  */

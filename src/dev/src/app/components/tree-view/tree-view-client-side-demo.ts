@@ -10,6 +10,28 @@ import {
 
 @Component({
   template: `
+    <h1 class="mb-4">FerUI Tree View</h1>
+    <h3>Overview</h3>
+    <p>
+      Just like any other FerUI component in <code>@ferui-components</code>, the Tree View will require adding the FerUI to
+      your project's main module to use this component like a regular Angular component.
+    </p>
+    <p>Import the FeruiModule in your app.module file and in your imports array module</p>
+    <p>In order to use the Tree View Component you will need:</p>
+    <ul>
+      <li>Data object which implements a <code>TreeNodeData interface</code></li>
+      <li>Data retriever object which implements a <code>TreeNodeDataRetriever interface</code></li>
+      <li>Configuration object which implements a <code>TreeViewConfiguration interface</code></li>
+    </ul>
+    <p>Three examples follow</p>
+    <ul>
+      <li>Client side with a root Tree Node</li>
+      <li>Client side with non-root Tree Nodes</li>
+      <li>Server side with a root Tree Node</li>
+    </ul>
+    <pre>
+      <code>var array = 'Some rry here';</code>
+    </pre>
     <div>
       <h1>Client Side Tree View</h1>
       <fui-tree-view
@@ -64,18 +86,17 @@ export class TreeViewClientSideDemo {
   @ViewChild('expandedFolder') expandedTem: TemplateRef<any>;
   @ViewChild('nonExpandedFolder') nonExpandedTem: TemplateRef<any>;
 
+  importModule: string = `Import { FeruiModule } from '@ferui/components'`;
+
   treeNodeData: TreeNodeData<FoodNode> = {
     data: TREE_DATA,
     label: 'name',
   };
-
   serverSideTreeNodeData: TreeNodeData<FoodNode> = {
     data: { name: 'Foods' },
     label: 'name',
   };
-
   noRoot = new NonRootTreeNode();
-
   treeDataArrayRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {
       return Promise.resolve(!!node.data.data.children && node.data.data.children.length > 0);
@@ -99,7 +120,6 @@ export class TreeViewClientSideDemo {
       return isExpanded ? this.expandedTem : this.nonExpandedTem;
     },
   };
-
   treeDataRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {
       return Promise.resolve(!!node.data.data.children && node.data.data.children.length > 0);
@@ -207,7 +227,7 @@ const TREE_DATA: FoodNode = {
     {
       name: 'Fruit',
       children: [
-        { name: 'Apple' },
+        { name: 'Apple with a realy long name' },
         { name: 'Banana' },
         { name: 'Fruit loops' },
         {

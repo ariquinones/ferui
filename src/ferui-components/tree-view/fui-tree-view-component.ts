@@ -70,12 +70,12 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
 
   treeViewStyles: FuiTreeViewComponentStyles;
   colorTheme: TreeViewColorTheme;
+  scrollViewArray: TreeNode<T>[];
+  BUFFER_AMOUNT: number = 10;
   private rootNode: TreeNode<T>;
   private nonRootArray: TreeNode<T>[];
-  private scrollViewArray: TreeNode<T>[];
   private scrollObservable: Observable<any>;
   private scrollSubscription: Subscription;
-  private BUFFER_AMOUNT: number = 10;
   private SERVER_SIDE_COMPONENT: boolean = false;
   private TREE_NODE_COMPONENT_HEIGHT: number = 34;
   private DEFAULT_WIDTH: string = 'auto';

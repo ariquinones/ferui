@@ -1,4 +1,4 @@
-import { Component, ViewChild, TemplateRef } from '@angular/core';
+import { Component, ViewChild, TemplateRef, HostBinding } from '@angular/core';
 import {
   PagingParams,
   TreeNodeDataRetriever,
@@ -39,7 +39,8 @@ import {
         [treeNodeData]="treeNodeData"
         [dataRetriever]="treeDataRetriever"
         [config]="{ width: '250px', height: '300px', colorVariation: 'LIGHT_BLUE' }"
-      ></fui-tree-view>
+      >
+      </fui-tree-view>
     </div>
     <div>
       <h1>Client Side Tree View Array Type</h1>
@@ -61,10 +62,14 @@ import {
     </div>
 
     <ng-template #expandedFolder>
-      <clr-icon class="fui-less-icon" shape="fui-less"></clr-icon>
+      <clr-icon class="fui-less-icon" shape="fui-solid-arrow"></clr-icon>
     </ng-template>
     <ng-template #nonExpandedFolder>
-      <clr-icon class="fui-add-icon" shape="fui-add"></clr-icon>
+      <clr-icon class="fui-add-icon" shape="fui-solid-arrow"></clr-icon>
+    </ng-template>
+
+    <ng-template #template let-node="node">
+      <span>Custom: {{ node.data.data[node.data.label] }}</span>
     </ng-template>
   `,
   styles: [
@@ -73,11 +78,13 @@ import {
         height: 12px;
         width: 10px;
         margin-bottom: 2px;
+        transform: rotate(180deg);
       }
       .fui-add-icon {
         height: 12px;
         width: 12px;
         margin-bottom: 2px;
+        transform: rotate(90deg);
       }
     `,
   ],
@@ -85,8 +92,8 @@ import {
 export class TreeViewClientSideDemo {
   @ViewChild('expandedFolder') expandedTem: TemplateRef<any>;
   @ViewChild('nonExpandedFolder') nonExpandedTem: TemplateRef<any>;
-
-  importModule: string = `Import { FeruiModule } from '@ferui/components'`;
+  @ViewChild('template') nodeTemplate: TemplateRef<any>;
+  @HostBinding('style.margin-bottom.px') marginBottom: number = 30;
 
   treeNodeData: TreeNodeData<FoodNode> = {
     data: TREE_DATA,
@@ -116,9 +123,6 @@ export class TreeViewClientSideDemo {
         })
       );
     },
-    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-      return isExpanded ? this.expandedTem : this.nonExpandedTem;
-    },
   };
   treeDataRetriever = {
     hasChildNodes: (node: TreeNode<FoodNode>) => {
@@ -131,8 +135,11 @@ export class TreeViewClientSideDemo {
         })
       );
     },
-    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-      return isExpanded ? this.expandedTem : this.nonExpandedTem;
+    getIconTemplate: (node: TreeNode<FoodNode>) => {
+      return node.expanded ? this.expandedTem : this.nonExpandedTem;
+    },
+    getNodeTemplate: () => {
+      return this.nodeTemplate;
     },
   } as TreeNodeDataRetriever<FoodNode>;
 
@@ -148,9 +155,6 @@ export class TreeViewClientSideDemo {
           return { data: it, label: 'name' };
         })
       );
-    },
-    getIconTemplate: (node: TreeNode<FoodNode>, isExpanded: boolean, isSelected: boolean) => {
-      return isExpanded ? this.expandedTem : this.nonExpandedTem;
     },
     getPagedChildNodeData: (node: TreeNode<FoodNode>, pagingParams: PagingParams) => {
       return new Promise((resolve, reject) => {

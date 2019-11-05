@@ -21,11 +21,11 @@ export interface PagingParams {
  */
 export interface TreeNodeDataRetriever<T> {
   getChildNodeData(parent: TreeNode<T>): Promise<Array<TreeNodeData<T>>>;
-
   hasChildNodes(parent: TreeNode<T>): Promise<boolean>;
-
   // based on the current TreeNode and its status, we allow the developer to give us an icon template
-  getIconTemplate(treeNode: TreeNode<T>, isExpanded: boolean, isSelected: boolean): TemplateRef<any> | null;
+  getIconTemplate?(treeNode: TreeNode<T>): TemplateRef<any>;
+  // If developer wishes to give us a template ref we shall render this template in the view
+  getNodeTemplate?(): TemplateRef<any>;
 }
 
 /**
@@ -49,9 +49,10 @@ export interface TreeNode<T> {
   loadError: boolean;
 }
 
+/**
+ * Non root tree node empty instance
+ */
 export class NonRootTreeNode<T> implements TreeNodeData<T> {
-  // public static INSTANCE: NonRootTreeNode<T> = new NonRootTreeNode<T>();
-  //
   data: T;
   label: string;
 }

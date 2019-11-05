@@ -29,9 +29,7 @@ import {
       <li>Client side with non-root Tree Nodes</li>
       <li>Server side with a root Tree Node</li>
     </ul>
-    <pre>
-      <code>var array = 'Some rry here';</code>
-    </pre>
+
     <div>
       <h1>Client Side Tree View</h1>
       <fui-tree-view

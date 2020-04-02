@@ -5,7 +5,7 @@ import {
   TreeNodeData,
   PagedTreeNodeDataRetriever,
   NonRootTreeNode,
-  FuiTreeViewComponent,
+  FuiTreeViewComponent
 } from '@ferui/components';
 
 @Component({
@@ -13,8 +13,8 @@ import {
     <h1 class="mb-4">FerUI Tree View</h1>
     <h3>Overview</h3>
     <p>
-      Just like any other FerUI component in <code>@ferui-components</code>, the Tree View will require adding the FerUI to
-      your project's main module to use this component like a regular Angular component.
+      Just like any other FerUI component in <code>@ferui-components</code>, the Tree View will require adding the FerUI to your
+      project's main module to use this component like a regular Angular component.
     </p>
     <p>Import the FeruiModule in your app.module file and in your imports array module</p>
     <p>In order to use the Tree View Component you will need:</p>
@@ -27,8 +27,8 @@ import {
       <li>Configuration object which implements a <code>TreeViewConfiguration</code> interface</li>
     </ul>
     <p>
-      Ferui Tree View Component allows developer to subscribe to an event observable that triggers when a Tree Node is
-      expanded, collapsed, or selected. Expects to receive a TreeViewEvent.
+      Ferui Tree View Component allows developer to subscribe to an event observable that triggers when a Tree Node is expanded,
+      collapsed, or selected. Expects to receive a TreeViewEvent.
     </p>
     <p>Three examples follow</p>
 
@@ -94,6 +94,20 @@ import {
       </pre>
     </div>
 
+    <div class="demo-tree-view">
+      <h1>Non Root Server Side Tree View</h1>
+      <div class="demo-component">
+        <fui-tree-view
+          [treeNodeData]="nonRootServerSide"
+          [dataRetriever]="nonRootServerSideRetriever"
+          [config]="{ width: '250px', height: '300px' }"
+        ></fui-tree-view>
+      </div>
+      <pre class="code-example">
+        <code [languages]="['typescript']" [highlight]="dataExample5"></code>
+      </pre>
+    </div>
+
     <ng-template #iconTemplate let-node="node">
       <clr-icon *ngIf="node.expanded" class="fui-less-icon" shape="fui-solid-arrow"></clr-icon>
       <clr-icon *ngIf="!node.expanded" class="fui-add-icon" shape="fui-solid-arrow"></clr-icon>
@@ -134,8 +148,8 @@ import {
         margin-bottom: 2px;
         transform: rotate(90deg);
       }
-    `,
-  ],
+    `
+  ]
 })
 export class TreeViewClientSideDemo {
   @ViewChild('iconTemplate') iconTemplate: TemplateRef<any>;
@@ -180,13 +194,13 @@ export class TreeViewClientSideDemo {
         ],
       }],
     };
-    
+
     // nodeLabel property will be used to display the tree node text label
     treeNodeData: TreeNodeData<FoodNode> = {
       data: FOOD_TREE_DATA,
       nodeLabel: FOOD_TREE_DATA.name
     }
-    
+
     treeNodeDataRetriever: TreeNodeDataRetriever<FoodNode> = {
       hasChildrenNodes: (node: TreeNodeData<FoodNode>) => {
         return Promise.resolve(!!node.data.children && node.data.children.length > 0);
@@ -198,12 +212,12 @@ export class TreeViewClientSideDemo {
       );
       }
     }
-    
+
     treeViewConfiguration: TreeViewConfiguration = {
       width: '250px',
       height: '300px'
     }
-    
+
     // A developer may also bind to the onNodeEvent observable to listen to any node event happening in the Tree View
     // The event emitted will deliver a TreeViewEvent<T> type
     handleNodeEvent(event) {
@@ -224,7 +238,7 @@ export class TreeViewClientSideDemo {
       hasBorders: true,
       bufferAmount: 30
     }
-    
+
     serverDataRetriever: PagedTreeNodeDataRetriever<FoodNode> = {
       hasChildNodes: (node: TreeNodeData<FoodNode>) => {
         return Promise.resolve(node.hasChildren());
@@ -245,15 +259,15 @@ export class TreeViewClientSideDemo {
   dataExample3 = `
     // When using non root tree view, pass in an empty instance of the NonRootTreeNode class
     const noRootTreeView = NonRootTreeNode.instance;
-    
+
     // Developer can add the getIconTemplate & getNodeTemplate methods to TreeNodeDataRetriever
     // to customize node how they wish
     treeDataArrayRetriever: TreeNodeDataRetriever<PersonInterface> = {
-      
+
       hasChildNodes: (node: TreeNodeData<PersonInterface>) => {
         return Promise.resolve(!!node.data.children && node.data.children.length > 0);
       },
-      
+
       getChildNodeData: (node: TreeNodeData<PersonInterface>) => {
         const isEmptyRoot = node instanceof NonRootTreeNode;
         if (isEmptyRoot) {
@@ -269,23 +283,23 @@ export class TreeViewClientSideDemo {
           });
         );
       },
-      
+
       // Icon templates will be used as the clickable icons to expand or collapse node
       getIconTemplate: (): TemplateRef<any> => {
         return this.iconTemplate;
       },
-      
+
       // Node template must take in a node property to adjust label according to developer wants
       getNodeTemplate: (): TemplateRef<any> => {
         return this.nodeTemplate;
       },
     };
   `;
-  htmlExample3 = `   
-   
+  htmlExample3 = `
+
    // Developer may use their own icon and node templates and expect the node property to be passed in to each
-   // template given to customize based on needs. 
-   // A developer can expect a TreeNode<T> interface 
+   // template given to customize based on needs.
+   // A developer can expect a TreeNode<T> interface
    // interface TreeNode<T> {
    //   data: TreeNodeData<T>;
    //   selected: boolean;
@@ -296,7 +310,7 @@ export class TreeViewClientSideDemo {
    //   showLoader: boolean;
    //   loadError: boolean;
    // }
-   
+
     <ng-template #folderTemplate let-node="node">
       <clr-icon *ngIf="node.expanded" class="fui-less-icon" shape="fui-solid-arrow"></clr-icon>
       <clr-icon *ngIf="!node.expanded" class="fui-add-icon" shape="fui-solid-arrow"></clr-icon>
@@ -314,12 +328,12 @@ export class TreeViewClientSideDemo {
   dataExample4 = `
     // Using Angular's ViewChild (or similar) you can gain access to your Tree View's public api
     @ViewChild('myTreeView') treeView: FuiTreeViewComponent<FoodNode>;
-    
+
     // The FuiTreeViewComponent will give you access to 3 public API methods that all take in a TreeNodeData<T>
     // selectNode
     // expandNode
     // collapseNode
-    
+
     closeVegetables(): void {
       const treeNodeData: TreeNodeData<FoodNode> = {
         data: this.treeNodeData.data.children[1],
@@ -345,13 +359,45 @@ export class TreeViewClientSideDemo {
     }
   `;
 
+  dataExample5 = `
+    // Pass in the non root tree instance
+    nonRootServerSide = NonRootTreeNode.instance;
+
+    // If you need to, handle the empty root node instance differently
+    nonRootServerSideRetriever = {
+      hasChildNodes: (node: TreeNodeData<FoodNode>) => {
+        return Promise.resolve(!!node.data.children && node.data.children.length > 0);
+      },
+      getPagedChildNodeData: (node: TreeNodeData<FoodNode>, pagingParams: PagingParams) => {
+        const isEmptyRoot = node instanceof NonRootTreeNode;
+        if (isEmptyRoot) {
+          return Promise.resolve(
+            serverData.children.map(it => {
+              return { data: it, nodeLabel: it.name };
+            })
+          );
+        }
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+              const children = node.data.children.slice(pagingParams.offset, pagingParams.offset + pagingParams.limit);
+              resolve(
+                children.map(it => {
+                  return { data: it, nodeLabel: it.name };
+                })
+              );
+            }, 500);
+        });
+      },
+    };
+  `;
+
   treeNodeData: TreeNodeData<FoodNode> = {
     data: treeData,
-    nodeLabel: treeData.name,
+    nodeLabel: treeData.name
   };
   serverSideTreeNodeData: TreeNodeData<FoodNode> = {
     data: serverData,
-    nodeLabel: serverData.name,
+    nodeLabel: serverData.name
   };
   noRoot = NonRootTreeNode.instance;
   treeDataArrayRetriever = {
@@ -378,7 +424,7 @@ export class TreeViewClientSideDemo {
     },
     getNodeTemplate: () => {
       return this.nodeTemplate;
-    },
+    }
   };
   treeDataRetriever: TreeNodeDataRetriever<FoodNode> = {
     hasChildNodes: (node: TreeNodeData<FoodNode>) => {
@@ -390,7 +436,7 @@ export class TreeViewClientSideDemo {
           return { data: it, nodeLabel: it.name };
         })
       );
-    },
+    }
   };
 
   // Server side node
@@ -422,7 +468,38 @@ export class TreeViewClientSideDemo {
           }, 500);
         }
       });
+    }
+  };
+
+  // Non Root Server Side
+  nonRootServerSide = NonRootTreeNode.instance;
+  nonRootServerSideRetriever = {
+    hasChildNodes: (node: TreeNodeData<FoodNode>) => {
+      return Promise.resolve(!!node.data.children && node.data.children.length > 0);
     },
+    getChildNodeData: (node: TreeNodeData<FoodNode>) => {
+      // Not used
+    },
+    getPagedChildNodeData: (node: TreeNodeData<FoodNode>, pagingParams: PagingParams) => {
+      const isEmptyRoot = node instanceof NonRootTreeNode;
+      if (isEmptyRoot) {
+        return Promise.resolve(
+          serverData.children.map(it => {
+            return { data: it, nodeLabel: it.name };
+          })
+        );
+      }
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          const children = node.data.children.slice(pagingParams.offset, pagingParams.offset + pagingParams.limit);
+          resolve(
+            children.map(it => {
+              return { data: it, nodeLabel: it.name };
+            })
+          );
+        }, 500);
+      });
+    }
   };
 
   ngOnInit() {
@@ -446,7 +523,7 @@ export class TreeViewClientSideDemo {
   closeVegetables(): void {
     const treeNodeData: TreeNodeData<FoodNode> = {
       data: this.treeNodeData.data.children[1],
-      nodeLabel: this.treeNodeData.data.children[1].name,
+      nodeLabel: this.treeNodeData.data.children[1].name
     };
     this.publicTreeView.collapseNode(treeNodeData);
   }
@@ -454,7 +531,7 @@ export class TreeViewClientSideDemo {
   expandVegetables(): void {
     const treeNodeData: TreeNodeData<FoodNode> = {
       data: this.treeNodeData.data.children[1],
-      nodeLabel: this.treeNodeData.data.children[1].name,
+      nodeLabel: this.treeNodeData.data.children[1].name
     };
     this.publicTreeView.expandNode(treeNodeData);
   }
@@ -462,7 +539,7 @@ export class TreeViewClientSideDemo {
   selectFruits(): void {
     const treeNodeData: TreeNodeData<FoodNode> = {
       data: this.treeNodeData.data.children[0],
-      nodeLabel: this.treeNodeData.data.children[0].name,
+      nodeLabel: this.treeNodeData.data.children[0].name
     };
     this.publicTreeView.selectNode(treeNodeData);
   }
@@ -485,34 +562,34 @@ const serverData: FoodNode = {
           children: [
             {
               name: 'banana child',
-              children: [{ name: 'banana with long name for grandchild', children: [{ name: 'banana great grandchild' }] }],
-            },
-          ],
+              children: [{ name: 'banana with long name for grandchild', children: [{ name: 'banana great grandchild' }] }]
+            }
+          ]
         },
         {
           name: 'Strawberry',
-          children: [],
+          children: []
         },
         { name: 'Blackberry' },
         { name: 'Blueberries' },
         { name: 'Kiwi' },
-        { name: 'Coconut' },
-      ],
+        { name: 'Coconut' }
+      ]
     },
     {
       name: 'Vegetables',
       children: [
         {
           name: 'Green',
-          children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }],
+          children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }]
         },
         {
           name: 'Orange',
-          children: [{ name: 'Pumpkins' }, { name: 'Carrots' }],
-        },
-      ],
-    },
-  ],
+          children: [{ name: 'Pumpkins' }, { name: 'Carrots' }]
+        }
+      ]
+    }
+  ]
 };
 
 const dataArray = [
@@ -531,34 +608,34 @@ const dataArray = [
           { name: 'Grandchild 5' },
           { name: 'Grandchild 6' },
           { name: 'Grandchild 7' },
-          { name: 'Grandchild 8' },
-        ],
+          { name: 'Grandchild 8' }
+        ]
       },
       {
         name: 'Child 4',
-        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }, { name: 'Grandchild 3' }],
+        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }, { name: 'Grandchild 3' }]
       },
       { name: 'Child 5' },
       { name: 'Child 6' },
-      { name: 'Child 7' },
-    ],
+      { name: 'Child 7' }
+    ]
   },
   {
     name: 'Parent 2',
     children: [
       {
         name: 'Child 1',
-        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }],
+        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }]
       },
       {
         name: 'Child 2',
-        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }],
-      },
-    ],
+        children: [{ name: 'Grandchild 1' }, { name: 'Grandchild 2' }]
+      }
+    ]
   },
   {
-    name: 'Parent 3',
-  },
+    name: 'Parent 3'
+  }
 ];
 
 const treeData: FoodNode = {
@@ -566,20 +643,20 @@ const treeData: FoodNode = {
   children: [
     {
       name: 'Fruit',
-      children: [{ name: 'Apple' }, { name: 'Banana' }, { name: 'Strawberry' }],
+      children: [{ name: 'Apple' }, { name: 'Banana' }, { name: 'Strawberry' }]
     },
     {
       name: 'Vegetables',
       children: [
         {
           name: 'Green',
-          children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }],
+          children: [{ name: 'Broccoli' }, { name: 'Brussel sprouts' }]
         },
         {
           name: 'Orange',
-          children: [{ name: 'Pumpkins' }, { name: 'Carrots' }],
-        },
-      ],
-    },
-  ],
+          children: [{ name: 'Pumpkins' }, { name: 'Carrots' }]
+        }
+      ]
+    }
+  ]
 };

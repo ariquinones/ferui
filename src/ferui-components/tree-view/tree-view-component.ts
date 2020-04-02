@@ -99,6 +99,7 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
 
   private rootNode: TreeNode<T>;
   private nonRootArray: TreeNode<T>[];
+  private nonRootArrayComplete: boolean = false;
   private scrollSubscription: Subscription;
   private scrollWidthChangeSub: Subscription;
   private originalWidth: number;
@@ -350,7 +351,7 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
     const numberNeeded = this.bufferAmount - (this.scrollViewArray.length - lastIdxInView);
     if (numberNeeded > 0 && !this.scrollPromise) {
       const parentNode: TreeNode<T> | null = this.scrollViewArray[lastIdxInView].parent;
-      if (parentNode === null || this.getFirstNodeWithMoreChildrenToLoad(parentNode) != null) {
+      if ((parentNode === null && !this.nonRootArrayComplete) || this.getFirstNodeWithMoreChildrenToLoad(parentNode) != null) {
         this.scrollPromise = true;
         await this.loadMoreNodes(parentNode, numberNeeded, true);
         this.rebuildVirtualScrollerArray();
@@ -369,6 +370,10 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
    */
   private async loadMoreNodes(node: TreeNode<T>, numberToLoad: number, recurse: boolean) {
     const firstNodeWithMoreChildrenToLoad = this.getFirstNodeWithMoreChildrenToLoad(node);
+    if (firstNodeWithMoreChildrenToLoad === null && this.treeNodeData instanceof NonRootTreeNode) {
+      // Scrolling throw the top first level on a non root array
+      return this.getNonRootChildren(numberToLoad);
+    }
     if (firstNodeWithMoreChildrenToLoad === null) {
       return;
     }
@@ -411,6 +416,26 @@ export class FuiTreeViewComponent<T> implements OnInit, OnDestroy {
           recurse
         );
       }
+    }
+  }
+
+  /**
+   * Handle scrolling of non root server side nodes and use the defined nonRoot array specifically
+   * @param numberToLoad
+   */
+  private async getNonRootChildren(numberToLoad: number) {
+    if (!this.nonRootArrayComplete) {
+      const emptyRootNode = this.createTreeNode(this.treeNodeData, null);
+      const children = await this.getNodeData()(emptyRootNode.data, { offset: this.scrollViewArray.length, limit: numberToLoad });
+      this.scrollViewArray = this.nonRootArray = this.nonRootArray.concat(
+        children.map(child => {
+          return this.createTreeNode(child, null);
+        })
+      );
+      this.scrollPromise = false;
+      this.nonRootArrayComplete = children.length < numberToLoad;
+    } else {
+      this.scrollPromise = false;
     }
   }
 
